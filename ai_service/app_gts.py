@@ -131,7 +131,7 @@ def calculate_mean(numbers):
 
 def lp_det_reco(img_path):
     result = multiline_number_plate_detection_and_reading(
-        glob(img_path), matplotlib_show=True
+        glob(img_path), matplotlib_show=False
     )
     (
         images,
@@ -308,8 +308,8 @@ def lp_det_reco(img_path):
         conf = None
         country = None
 
-    return combined_element_without_spaces, conf, country
+    return combined_element_without_spaces, conf, country, img_final
     # return combined_element_without_spaces, img_final,  conf, country
 
-
+result_text, confidence, country_code, cropped_image = lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg')
 print(lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg'))
