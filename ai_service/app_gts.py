@@ -309,7 +309,6 @@ def lp_det_reco(img_path):
         country = None
 
     return combined_element_without_spaces, conf, country, img_final
-    # return combined_element_without_spaces, img_final,  conf, country
 
-result_text, confidence, country_code, cropped_image = lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg')
-print(lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg'))
+# result_text, confidence, country_code, cropped_image = lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg')
+# print(lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg'))

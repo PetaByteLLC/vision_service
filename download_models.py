@@ -16,7 +16,7 @@ def download_model(model_url, model_name):
                 url=url, model_dir=os.path.join(ROOT_DIR, 'weights'), progress=True, file_name=None)
     return model_path
 
-data_path = os.path.join('', 'data', 'models', 'Detector', 'yolov8', 'yolov8s-2023-02-11.pt')
+data_path = os.path.join('.','data','models','Detector','yolov8','yolov8s-2023-02-11.pt')
 if not os.path.isfile(data_path):
     ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
     data_path = load_file_from_url(
@@ -38,6 +38,8 @@ car_type_name = 'export_car_body.pkl'
 car_type_url = ['https://cloud.sanarip.org/index.php/s/yAmf3gzSRoFZgmx/download/export_car_body.pkl']
 yolov8_name = 'yolov8x.pt'
 yolov8_url = ['https://cloud.sanarip.org/index.php/s/c8LByRzRc7MGWnB/download/yolov8x.pt']
+truck_brand_name = 'export_truck_brand.pkl'
+truck_brand_url = ['https://cloud.sanarip.org/index.php/s/7tmD8GBH9SRqA4W/download/export_truck_brand.pkl']
 
 # ls
 country_model = 'country_model_v7am.pkl'
@@ -50,6 +52,7 @@ car_brand_path = download_model(car_brand_url, car_brand_name)
 car_color_path = download_model(car_color_url, car_color_name)
 car_type_path = download_model(car_type_url, car_type_name)
 yolov8_path = download_model(yolov8_url, yolov8_name)
+truck_brand_path = download_model(truck_brand_url, truck_brand_name)
 MODEL = yolov8_path
 
 model = YOLO(MODEL)
@@ -62,6 +65,7 @@ learn_car_brand = load_learner(car_brand_path)
 learn_car_color = load_learner(car_color_path)
 learn_car_body = load_learner(car_type_path)
 country_model = load_learner(country_model_path)
+learn_truck_brand = load_learner(truck_brand_path)
 
 model_RDB =RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
 upsampler = RealESRGANer(
