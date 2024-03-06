@@ -2,7 +2,9 @@ from .number_plate_detection_and_reading_v2 import NumberPlateDetectionAndReadin
 from nomeroff_net.pipelines.base import RuntimePipeline
 
 
-class NumberPlateDetectionAndReadingRuntimeV2(NumberPlateDetectionAndReadingV2, RuntimePipeline):
+class NumberPlateDetectionAndReadingRuntimeV2(
+    NumberPlateDetectionAndReadingV2, RuntimePipeline
+):
     """
     Number Plate Detection and reading runtime
     """

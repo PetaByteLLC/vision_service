@@ -2,6 +2,7 @@
 Numberplate Classification Model
 python3 -m nomeroff_net.nnmodels.fraud_numberpate_options -f nomeroff_net/nnmodels/fraud_numberpate_options.py
 """
+
 import torch
 import torch.nn as nn
 from torch.nn import functional
@@ -11,12 +12,9 @@ from nomeroff_net.tools.mcm import get_device_torch
 
 
 class FraudNPNet(ClassificationNet):
-    """
+    """ """
 
-    """
-    def __init__(self,
-                 batch_size: int = 1,
-                 learning_rate: float = 0.005):
+    def __init__(self, batch_size: int = 1, learning_rate: float = 0.005):
         super(FraudNPNet, self).__init__()  # activation='relu'
         self.batch_size = batch_size
         self.learning_rate = learning_rate
@@ -37,46 +35,61 @@ class FraudNPNet(ClassificationNet):
 
     def training_step(self, batch, _):
         loss, acc = self.step(batch)
-        self.log('loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
-        self.log(f'train_accuracy', acc, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log("loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+        )
+        self.log(
+            f"train_accuracy",
+            acc,
+            on_step=True,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
         tqdm_dict = {
-            'train_loss': loss,
-            'acc': acc,
+            "train_loss": loss,
+            "acc": acc,
         }
-        return {
-            'loss': loss,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        }
+        return {"loss": loss, "progress_bar": tqdm_dict, "log": tqdm_dict}
 
     def validation_step(self, batch, _):
         loss, acc = self.step(batch)
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log(f'val_accuracy', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "val_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
+        self.log(
+            f"val_accuracy",
+            acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
         tqdm_dict = {
-            'val_loss': loss,
-            'acc': acc,
+            "val_loss": loss,
+            "acc": acc,
         }
-        return {
-            'val_loss': loss,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        }
+        return {"val_loss": loss, "progress_bar": tqdm_dict, "log": tqdm_dict}
 
     def test_step(self, batch, _):
         loss, acc = self.step(batch)
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
-        self.log(f'test_accuracy', acc, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "test_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
+        self.log(
+            f"test_accuracy",
+            acc,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            logger=True,
+        )
         tqdm_dict = {
-            'test_loss': loss,
-            'acc': acc,
+            "test_loss": loss,
+            "acc": acc,
         }
-        return {
-            'test_loss': loss,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        }
+        return {"test_loss": loss, "progress_bar": tqdm_dict, "log": tqdm_dict}
 
     def forward(self, x):
         y = self.resnet(x)
@@ -101,16 +114,18 @@ class FraudNPNet(ClassificationNet):
 
         correct_results_sum = (torch.round(ys) == true_ys.unsqueeze(1)).sum().float()
         acc = correct_results_sum / true_ys.shape[0]
-  
+
         return loss, acc
 
     def configure_optimizers(self):
-        optimizer = torch.optim.ASGD(self.parameters(),
-                                     lr=self.learning_rate,
-                                     lambd=0.0001,
-                                     alpha=0.75,
-                                     t0=1000000.0,
-                                     weight_decay=0)
+        optimizer = torch.optim.ASGD(
+            self.parameters(),
+            lr=self.learning_rate,
+            lambd=0.0001,
+            alpha=0.75,
+            t0=1000000.0,
+            weight_decay=0,
+        )
         return optimizer
 
 

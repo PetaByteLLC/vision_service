@@ -14,33 +14,36 @@ Examples:
     >>> print(texts)
     (['AI7007ET'], ['241VBZ10'])
 """
+
 from typing import Any, Dict, Optional, List, Union
 from nomeroff_net.image_loaders import BaseImageLoader
 from .number_plate_detection_and_reading import NumberPlateDetectionAndReading
-from nomeroff_net.pipes.number_plate_multiline_extractors.multiline_np_extractor \
-    import convert_multiline_images_to_one_line
+from nomeroff_net.pipes.number_plate_multiline_extractors.multiline_np_extractor import (
+    convert_multiline_images_to_one_line,
+)
 
 
 class MultilineNumberPlateDetectionAndReading(NumberPlateDetectionAndReading):
     """
     Multiline Number Plate Detection and reading Pipeline
     """
-    def __init__(self,
-                 task,
-                 image_loader: Optional[Union[str, BaseImageLoader]],
-                 path_to_model: str = "latest",
-                 mtl_model_path: str = "latest",
-                 refiner_model_path: str = "latest",
-                 path_to_classification_model: str = "latest",
-                 presets: Dict = None,
-                 classification_options: List = None,
-                 off_number_plate_classification: bool = False,
-                 default_label: str = "eu_ua_2015",
-                 default_lines_count: int = 1,
-                 **kwargs):
-        """
 
-        """
+    def __init__(
+        self,
+        task,
+        image_loader: Optional[Union[str, BaseImageLoader]],
+        path_to_model: str = "latest",
+        mtl_model_path: str = "latest",
+        refiner_model_path: str = "latest",
+        path_to_classification_model: str = "latest",
+        presets: Dict = None,
+        classification_options: List = None,
+        off_number_plate_classification: bool = False,
+        default_label: str = "eu_ua_2015",
+        default_lines_count: int = 1,
+        **kwargs
+    ):
+        """ """
         NumberPlateDetectionAndReading.__init__(
             self,
             task=task,
@@ -54,14 +57,24 @@ class MultilineNumberPlateDetectionAndReading(NumberPlateDetectionAndReading):
             classification_options=classification_options,
             default_label=default_label,
             default_lines_count=default_lines_count,
-            **kwargs)
+            **kwargs
+        )
 
     def forward(self, inputs: Any, **forward_parameters: Dict) -> Any:
-        (region_ids, region_names,
-         count_lines, confidences, predicted,
-         zones, image_ids,
-         images_bboxs, images,
-         images_points, images_mline_boxes, preprocessed_np) = self.forward_detection_np(inputs, **forward_parameters)
+        (
+            region_ids,
+            region_names,
+            count_lines,
+            confidences,
+            predicted,
+            zones,
+            image_ids,
+            images_bboxs,
+            images,
+            images_points,
+            images_mline_boxes,
+            preprocessed_np,
+        ) = self.forward_detection_np(inputs, **forward_parameters)
         zones = convert_multiline_images_to_one_line(
             image_ids,
             images,
@@ -69,9 +82,18 @@ class MultilineNumberPlateDetectionAndReading(NumberPlateDetectionAndReading):
             images_mline_boxes,
             images_bboxs,
             count_lines,
-            region_names)
-        return self.forward_recognition_np(region_ids, region_names,
-                                           count_lines, confidences,
-                                           zones, image_ids,
-                                           images_bboxs, images,
-                                           images_points, preprocessed_np, **forward_parameters)
+            region_names,
+        )
+        return self.forward_recognition_np(
+            region_ids,
+            region_names,
+            count_lines,
+            confidences,
+            zones,
+            image_ids,
+            images_bboxs,
+            images,
+            images_points,
+            preprocessed_np,
+            **forward_parameters
+        )

@@ -2,6 +2,7 @@
 python3 -m nomeroff_net.pipes.number_plate_classificators.options_detector_trt \
         -f nomeroff_net/pipes/number_plate_classificators/options_detector_trt.py
 """
+
 import os
 import cv2
 import pycuda.driver as cuda
@@ -10,7 +11,9 @@ import numpy as np
 from typing import List, Dict, Tuple
 
 from nomeroff_net.tools import modelhub
-from nomeroff_net.pipes.number_plate_classificators.options_detector import OptionsDetector
+from nomeroff_net.pipes.number_plate_classificators.options_detector import (
+    OptionsDetector,
+)
 from nomeroff_net.tools.image_processing import normalize_img
 
 TRT_LOGGER = trt.Logger(trt.Logger.INFO)
@@ -20,6 +23,7 @@ class OptionsDetectorTrt(OptionsDetector):
     """
     TODO: describe class
     """
+
     def __init__(self, options: Dict = None) -> None:
         OptionsDetector.__init__(self, options)
         self.engine = None
@@ -54,9 +58,9 @@ class OptionsDetectorTrt(OptionsDetector):
             self.class_region = model_info["class_region"]
             self.count_lines = model_info["count_lines"]
         elif path_to_model.startswith("http"):
-            model_info = modelhub.download_model_by_url(path_to_model,
-                                                        self.get_classname(),
-                                                        "numberplate_options_trt")
+            model_info = modelhub.download_model_by_url(
+                path_to_model, self.get_classname(), "numberplate_options_trt"
+            )
             path_to_model = model_info["path"]
         return self.load_model(path_to_model)
 
@@ -64,21 +68,20 @@ class OptionsDetectorTrt(OptionsDetector):
         """
         Predict options(region, count lines) by numberplate images
         """
-        region_ids, count_lines, confidences, predicted = self.predict_with_confidence(imgs)
+        region_ids, count_lines, confidences, predicted = self.predict_with_confidence(
+            imgs
+        )
         if return_acc:
             return region_ids, count_lines, predicted
         return region_ids, count_lines
-    
+
     def run_engine(self, input_image):
         with self.engine.create_execution_context() as context:
             # Set input shape based on image dimensions for inference
-            context.set_binding_shape(self.engine.get_binding_index(self.input_name),
-                                      (
-                                          len(input_image), 
-                                          self.color_channels, 
-                                          self.height,
-                                          self.width
-                                      ))
+            context.set_binding_shape(
+                self.engine.get_binding_index(self.input_name),
+                (len(input_image), self.color_channels, self.height, self.width),
+            )
             input_image = np.array(input_image)
             # Allocate host and device buffers
             bindings = []
@@ -122,7 +125,9 @@ class OptionsDetectorTrt(OptionsDetector):
         """
         if not len(imgs):
             return [], [], [], []
-        xs = np.zeros((len(imgs), self.color_channels, self.height, self.width)).astype('float32')
+        xs = np.zeros((len(imgs), self.color_channels, self.height, self.width)).astype(
+            "float32"
+        )
 
         for i, img in enumerate(imgs):
             x = normalize_img(img)
@@ -141,13 +146,17 @@ class OptionsDetectorTrt(OptionsDetector):
 
 if __name__ == "__main__":
     det = OptionsDetectorTrt()
-    det.load(os.path.join(
-        os.getcwd(),
-        "./data/model_repository/numberplate_options/1/model.trt"))
+    det.load(
+        os.path.join(
+            os.getcwd(), "./data/model_repository/numberplate_options/1/model.trt"
+        )
+    )
 
     image_paths = [
         os.path.join(os.getcwd(), "./data/examples/numberplate_zone_images/JJF509.png"),
-        os.path.join(os.getcwd(), "./data/examples/numberplate_zone_images/RP70012.png")
+        os.path.join(
+            os.getcwd(), "./data/examples/numberplate_zone_images/RP70012.png"
+        ),
     ]
     images = [cv2.imread(image_path) for image_path in image_paths]
     y = det.predict(images)

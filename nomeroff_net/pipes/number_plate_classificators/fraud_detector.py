@@ -8,10 +8,13 @@ import pytorch_lightning as pl
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor
 
-from nomeroff_net.tools.mcm import (modelhub, get_device_torch)
+from nomeroff_net.tools.mcm import modelhub, get_device_torch
 from nomeroff_net.data_modules.numberplate_fraud_data_module import FraudNetDataModule
 from nomeroff_net.nnmodels.fraud_numberpate_model import FraudNPNet
-from nomeroff_net.tools.image_processing import normalize_img, convert_cv_zones_rgb_to_bgr
+from nomeroff_net.tools.image_processing import (
+    normalize_img,
+    convert_cv_zones_rgb_to_bgr,
+)
 
 device_torch = get_device_torch()
 
@@ -26,6 +29,7 @@ def imshow(img: np.ndarray) -> None:
     # functions to show an image
     """
     import matplotlib.pyplot as plt
+
     img = img / 2 + 0.5  # unnormalize
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
@@ -81,19 +85,18 @@ class FraudDetector(object):
             self.model = self.model.to(device_torch)
         return self.model
 
-    def prepare(self,
-                base_dir: str,
-                num_workers: int = 0,
-                verbose: bool = True) -> None:
+    def prepare(
+        self, base_dir: str, num_workers: int = 0, verbose: bool = True
+    ) -> None:
         """
         TODO: describe method
         """
         if verbose:
             print("START PREPARING")
         # you mast split your data on 3 directory
-        train_dir = os.path.join(base_dir, 'train')
-        validation_dir = os.path.join(base_dir, 'val')
-        test_dir = os.path.join(base_dir, 'val')
+        train_dir = os.path.join(base_dir, "train")
+        validation_dir = os.path.join(base_dir, "val")
+        test_dir = os.path.join(base_dir, "val")
 
         # compile generators
         self.dm = FraudNetDataModule(
@@ -103,27 +106,35 @@ class FraudDetector(object):
             width=self.width,
             height=self.height,
             batch_size=self.batch_size,
-            num_workers=num_workers)
+            num_workers=num_workers,
+        )
 
         if verbose:
             print("DATA PREPARED")
 
     @staticmethod
     def define_callbacks(log_dir):
-        checkpoint_callback = ModelCheckpoint(dirpath=log_dir, monitor='val_loss')
-        lr_monitor = LearningRateMonitor(logging_interval='step')
+        checkpoint_callback = ModelCheckpoint(dirpath=log_dir, monitor="val_loss")
+        lr_monitor = LearningRateMonitor(logging_interval="step")
         return [checkpoint_callback, lr_monitor]
 
-    def train(self,
-              log_dir=sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/logs/fake_np')))
-              ) -> FraudNPNet:
+    def train(
+        self,
+        log_dir=sys.path.append(
+            os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "../data/logs/fake_np")
+            )
+        ),
+    ) -> FraudNPNet:
         """
         TODO: describe method
         """
         self.create_model()
-        self.trainer = pl.Trainer(max_epochs=self.epochs,
-                                  gpus=self.gpus,
-                                  callbacks=self.define_callbacks(log_dir))
+        self.trainer = pl.Trainer(
+            max_epochs=self.epochs,
+            gpus=self.gpus,
+            callbacks=self.define_callbacks(log_dir),
+        )
         self.trainer.fit(self.model, self.dm)
         return self.model
 
@@ -134,16 +145,12 @@ class FraudDetector(object):
         """
         model = self.create_model()
 
-        trainer = pl.Trainer(
-            auto_lr_find=True,
-            max_epochs=self.epochs,
-            gpus=self.gpus)
+        trainer = pl.Trainer(auto_lr_find=True, max_epochs=self.epochs, gpus=self.gpus)
         num_training = int(len(self.dm.train_image_generator) * percentage) or 1
 
-        lr_finder = trainer.tuner.lr_find(model,
-                                          self.dm,
-                                          num_training=num_training,
-                                          early_stop_threshold=None)
+        lr_finder = trainer.tuner.lr_find(
+            model, self.dm, num_training=num_training, early_stop_threshold=None
+        )
         lr = lr_finder.suggestion()
         print(f"Found lr: {lr}")
         model.hparams["learning_rate"] = lr
@@ -174,9 +181,9 @@ class FraudDetector(object):
         return True
 
     def load_model(self, path_to_model):
-        self.model = FraudNPNet.load_from_checkpoint(path_to_model,
-                                                     map_location=torch.device('cpu'),
-                                                     batch_size=self.batch_size)
+        self.model = FraudNPNet.load_from_checkpoint(
+            path_to_model, map_location=torch.device("cpu"), batch_size=self.batch_size
+        )
         self.model = self.model.to(device_torch)
         self.model.eval()
         return self.model
@@ -197,7 +204,10 @@ class FraudDetector(object):
         """
         TODO: describe method
         """
-        return [CLASS_REGION_ALL.index(str(self.class_region[index].replace("_", "-"))) for index in indexes]
+        return [
+            CLASS_REGION_ALL.index(str(self.class_region[index].replace("_", "-")))
+            for index in indexes
+        ]
 
     @staticmethod
     def get_regions_label_global(indexes: List[int]) -> List[str]:
@@ -212,47 +222,67 @@ class FraudDetector(object):
         """
         return int(self.count_lines[index])
 
-    def custom_regions_id_to_all_regions_with_confidences(self,
-                                                          indexes: List[int],
-                                                          confidences: List) -> Tuple[List[int],
-                                                                                      List]:
+    def custom_regions_id_to_all_regions_with_confidences(
+        self, indexes: List[int], confidences: List
+    ) -> Tuple[List[int], List]:
         """
         TODO: describe method
         """
         global_indexes = self.custom_regions_id_to_all_regions(indexes)
         self.class_region_indexes = [i for i, _ in enumerate(self.class_region)]
         self.class_region_indexes_global = self.custom_regions_id_to_all_regions(
-            self.class_region_indexes)
-        global_confidences = [[confidence[self.class_region_indexes.index(self.class_region_indexes_global.index(i))]
-                               if i in self.class_region_indexes_global
-                               else 0
-                               for i, _
-                               in enumerate(CLASS_REGION_ALL)]
-                              for confidence in confidences]
+            self.class_region_indexes
+        )
+        global_confidences = [
+            [
+                (
+                    confidence[
+                        self.class_region_indexes.index(
+                            self.class_region_indexes_global.index(i)
+                        )
+                    ]
+                    if i in self.class_region_indexes_global
+                    else 0
+                )
+                for i, _ in enumerate(CLASS_REGION_ALL)
+            ]
+            for confidence in confidences
+        ]
         return global_indexes, global_confidences
 
     def custom_count_lines_id_to_all_count_lines(self, indexes: List[int]) -> List[int]:
         """
         TODO: describe method
         """
-        return [CLASS_LINES_ALL.index(str(self.count_lines[index])) for index in indexes]
+        return [
+            CLASS_LINES_ALL.index(str(self.count_lines[index])) for index in indexes
+        ]
 
-    def custom_count_lines_id_to_all_count_lines_with_confidences(self,
-                                                                  global_indexes: List[int],
-                                                                  confidences: List) -> Tuple[List[int],
-                                                                                              List]:
+    def custom_count_lines_id_to_all_count_lines_with_confidences(
+        self, global_indexes: List[int], confidences: List
+    ) -> Tuple[List[int], List]:
         """
         TODO: describe method
         """
         self.class_lines_indexes = [i for i, _ in enumerate(self.count_lines)]
         self.class_lines_indexes_global = self.custom_count_lines_id_to_all_count_lines(
-            self.class_lines_indexes)
-        global_confidences = [[confidence[self.class_lines_indexes.index(self.class_lines_indexes_global.index(i))]
-                               if i in self.class_lines_indexes_global
-                               else 0
-                               for i, _
-                               in enumerate(CLASS_LINES_ALL)]
-                              for confidence in confidences]
+            self.class_lines_indexes
+        )
+        global_confidences = [
+            [
+                (
+                    confidence[
+                        self.class_lines_indexes.index(
+                            self.class_lines_indexes_global.index(i)
+                        )
+                    ]
+                    if i in self.class_lines_indexes_global
+                    else 0
+                )
+                for i, _ in enumerate(CLASS_LINES_ALL)
+            ]
+            for confidence in confidences
+        ]
         return global_indexes, global_confidences
 
     @staticmethod
@@ -280,7 +310,9 @@ class FraudDetector(object):
             model_info = modelhub.download_model_by_name("numberplate_fake")
             path_to_model = model_info["path"]
         elif path_to_model.startswith("http"):
-            model_info = modelhub.download_model_by_url(path_to_model, self.get_classname(), "numberplate_fake")
+            model_info = modelhub.download_model_by_url(
+                path_to_model, self.get_classname(), "numberplate_fake"
+            )
             path_to_model = model_info["path"]
         elif path_to_model.startswith("modelhub://"):
             path_to_model = path_to_model.split("modelhub://")[1]
@@ -293,7 +325,9 @@ class FraudDetector(object):
         """
         Predict options(region, count lines) by numberplate images
         """
-        region_ids, count_lines, confidences, predicted = self.predict_with_confidence(imgs)
+        region_ids, count_lines, confidences, predicted = self.predict_with_confidence(
+            imgs
+        )
         if return_acc:
             return region_ids, count_lines, predicted
         return region_ids, count_lines

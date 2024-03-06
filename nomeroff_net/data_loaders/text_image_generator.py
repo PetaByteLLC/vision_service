@@ -15,16 +15,18 @@ device_torch = get_device_torch()
 
 
 class TextImageGenerator(object):
-    def __init__(self,
-                 dirpath: str,
-                 letters: List,
-                 max_text_len: int,
-                 label_converter: Any = None,
-                 img_w: int = 128,
-                 img_h: int = 64,
-                 batch_size: int = 1,
-                 seed: int = 42,
-                 with_aug: bool = False) -> None:
+    def __init__(
+        self,
+        dirpath: str,
+        letters: List,
+        max_text_len: int,
+        label_converter: Any = None,
+        img_w: int = 128,
+        img_h: int = 64,
+        batch_size: int = 1,
+        seed: int = 42,
+        with_aug: bool = False,
+    ) -> None:
 
         self.dirpath = dirpath
         self.img_h = img_h
@@ -36,8 +38,8 @@ class TextImageGenerator(object):
         self.label_converter = label_converter
         self.prepare_transformers()
 
-        img_dirpath = os.path.join(dirpath, 'img')
-        ann_dirpath = os.path.join(dirpath, 'ann')
+        img_dirpath = os.path.join(dirpath, "img")
+        ann_dirpath = os.path.join(dirpath, "ann")
         cache_postfix = "cache_ocr"
         if with_aug:
             cache_postfix = f"{cache_postfix}_aug_{seed}"
@@ -47,18 +49,20 @@ class TextImageGenerator(object):
         self.samples = []
         for file_name in tqdm(os.listdir(img_dirpath)):
             name, ext = os.path.splitext(file_name)
-            if ext == '.png':
+            if ext == ".png":
                 img_filepath = os.path.join(img_dirpath, file_name)
-                json_filepath = os.path.join(ann_dirpath, name + '.json')
+                json_filepath = os.path.join(ann_dirpath, name + ".json")
                 if not os.path.exists(json_filepath):
                     continue
                 self.paths.append(os.path.join(img_dirpath, file_name))
                 x_filepath = self.generate_cache_x_in_path(img_filepath, cache_dirpath)
-                description = json.load(open(json_filepath, 'r'))['description']
+                description = json.load(open(json_filepath, "r"))["description"]
                 if is_valid_str(description, self.letters):
                     self.samples.append([x_filepath, description])
                 else:
-                    raise Warning(f"Image {img_filepath} does not have a valid description!")
+                    raise Warning(
+                        f"Image {img_filepath} does not have a valid description!"
+                    )
             else:
                 raise Warning(f"Image {file_name} is not png!")
 
@@ -80,10 +84,12 @@ class TextImageGenerator(object):
     def generate_x_path(self, img_path: str, cache_dirpath: str):
         filename, file_extension = os.path.splitext(img_path)
         filename = os.path.basename(filename)
-        x_path = os.path.join(cache_dirpath, f'{filename}.pt')
+        x_path = os.path.join(cache_dirpath, f"{filename}.pt")
         return x_path
 
-    def generate_cache_x_in_path(self, img_path: str, cache_dirpath: str, newsize: Tuple = None) -> torch.Tensor:
+    def generate_cache_x_in_path(
+        self, img_path: str, cache_dirpath: str, newsize: Tuple = None
+    ) -> torch.Tensor:
         x_path = self.generate_x_path(img_path, cache_dirpath)
 
         if os.path.exists(x_path):
@@ -91,10 +97,11 @@ class TextImageGenerator(object):
 
         if newsize is None:
             newsize = (self.img_w, self.img_h)
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path).convert("RGB")
         img = img.resize(newsize)
         if self.with_aug:
             from nomeroff_net.tools.augmentations import aug
+
             img = np.array(img)
             imgs = aug([img])
             img = Image.fromarray(imgs[0])
@@ -117,9 +124,11 @@ class TextImageGenerator(object):
         return img, text
 
     def prepare_transformers(self):
-        self.list_transforms = transforms.Compose([
-            transforms.ToTensor(),
-        ])
+        self.list_transforms = transforms.Compose(
+            [
+                transforms.ToTensor(),
+            ]
+        )
 
     @torch.no_grad()
     def transform(self, img) -> torch.Tensor:

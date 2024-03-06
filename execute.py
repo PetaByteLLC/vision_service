@@ -5,7 +5,9 @@ from .ai_service.car_attributes import predict_image
 import sys
 
 
-sys.path.insert(0, 'src/web_service/vision_service')
+sys.path.insert(0, "src/web_service/vision_service")
+
+
 def process_image(img_path: str) -> Union[dict, Tuple]:
     """
     Description: Processes an image to detect a car and its attributes, as well as the license plate.

@@ -1,6 +1,7 @@
 """
 python3 nomeroff_net/image_loaders/base.py
 """
+
 from abc import abstractmethod
 
 

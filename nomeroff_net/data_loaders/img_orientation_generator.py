@@ -13,14 +13,16 @@ from nomeroff_net.tools.image_processing import rotate_image_and_bboxes, normali
 
 class ImgOrientationGenerator(Dataset):
 
-    def __init__(self,
-                 json_path: str,
-                 img_path: str,
-                 img_w: int = 295,
-                 img_h: int = 64,
-                 batch_size: int = 32,
-                 angles: List = None,
-                 with_aug: bool = False) -> None:
+    def __init__(
+        self,
+        json_path: str,
+        img_path: str,
+        img_w: int = 295,
+        img_h: int = 64,
+        batch_size: int = 32,
+        angles: List = None,
+        with_aug: bool = False,
+    ) -> None:
         if angles is None:
             angles = [0, 90, 180, 270]
         self.cur_index = 0
@@ -35,34 +37,42 @@ class ImgOrientationGenerator(Dataset):
             data = json.load(json_file)
 
         self.samples = []
-        for p in tqdm.tqdm(data['_via_img_metadata']):
-            item = data['_via_img_metadata'][p]
+        for p in tqdm.tqdm(data["_via_img_metadata"]):
+            item = data["_via_img_metadata"][p]
             file_name = item["file_name"]
             image_path = os.path.join(img_path, file_name)
             target_boxes = [
                 [
-                    min(np.array(region['shape_attributes']['all_points_x'])),
-                    min(np.array(region['shape_attributes']['all_points_y'])),
-                    max(np.array(region['shape_attributes']['all_points_x'])),
-                    max(np.array(region['shape_attributes']['all_points_y'])),
-                ] for region in item['regions']
-                if len(region['shape_attributes']['all_points_x']) == 4
-                and len(region['shape_attributes']['all_points_y']) == 4
+                    min(np.array(region["shape_attributes"]["all_points_x"])),
+                    min(np.array(region["shape_attributes"]["all_points_y"])),
+                    max(np.array(region["shape_attributes"]["all_points_x"])),
+                    max(np.array(region["shape_attributes"]["all_points_y"])),
+                ]
+                for region in item["regions"]
+                if len(region["shape_attributes"]["all_points_x"]) == 4
+                and len(region["shape_attributes"]["all_points_y"]) == 4
             ]
             if not len(target_boxes):
                 continue
 
             for label, angle in enumerate(angles):
                 for bbox in target_boxes:
-                    self.samples.append([
-                        [image_path, angle, bbox],
-                        np.array([1 if i == label else 0 for i in range(self.orientations_count)])
-                    ])
+                    self.samples.append(
+                        [
+                            [image_path, angle, bbox],
+                            np.array(
+                                [
+                                    1 if i == label else 0
+                                    for i in range(self.orientations_count)
+                                ]
+                            ),
+                        ]
+                    )
 
         self.n = len(self.samples)
         self.batch_size = batch_size
         self.indexes = list(range(self.n))
-        self.batch_count = int(self. n / batch_size)
+        self.batch_count = int(self.n / batch_size)
         self.with_aug = with_aug
         self.rezero()
 
@@ -79,12 +89,11 @@ class ImgOrientationGenerator(Dataset):
         """
         return self.n
 
-    def get_x_from_path(self,
-                        path: str,
-                        bbox: List,
-                        angle: int) -> np.ndarray:
+    def get_x_from_path(self, path: str, bbox: List, angle: int) -> np.ndarray:
         img = cv2.imread(path)
-        rotated_img, rotated_bbox = rotate_image_and_bboxes(img, np.array([bbox]), int(angle))
+        rotated_img, rotated_bbox = rotate_image_and_bboxes(
+            img, np.array([bbox]), int(angle)
+        )
         rotated_bbox = rotated_bbox[0]
         rotated_bbox[0] = rotated_bbox[0] if rotated_bbox[0] > 0 else 0
         rotated_bbox[1] = rotated_bbox[1] if rotated_bbox[1] > 0 else 0

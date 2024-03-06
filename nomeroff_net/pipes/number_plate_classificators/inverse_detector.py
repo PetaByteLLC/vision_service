@@ -8,17 +8,16 @@ from typing import List, Dict, Tuple
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.callbacks import LearningRateMonitor
 
-from nomeroff_net.tools.mcm import (modelhub, get_device_torch)
-from nomeroff_net.data_modules.numberplate_inverse_data_module import InverseNetDataModule
+from nomeroff_net.tools.mcm import modelhub, get_device_torch
+from nomeroff_net.data_modules.numberplate_inverse_data_module import (
+    InverseNetDataModule,
+)
 from nomeroff_net.nnmodels.numberplate_inverse_model import NPInverseNet
 from nomeroff_net.tools.image_processing import normalize_img
 
 device_torch = get_device_torch()
 
-ORIENTATION_ALL = [
-    "0",
-    "180"
-]
+ORIENTATION_ALL = ["0", "180"]
 
 
 def imshow(img: np.ndarray) -> None:
@@ -26,6 +25,7 @@ def imshow(img: np.ndarray) -> None:
     # functions to show an image
     """
     import matplotlib.pyplot as plt
+
     img = img / 2 + 0.5  # unnormalize
     npimg = img.numpy()
     plt.imshow(np.transpose(npimg, (1, 2, 0)))
@@ -77,26 +77,24 @@ class InverseDetector(object):
         TODO: describe method
         """
         if self.model is None:
-            self.model = NPInverseNet(len(self.orientations),
-                                      self.height,
-                                      self.width,
-                                      self.batch_size)
+            self.model = NPInverseNet(
+                len(self.orientations), self.height, self.width, self.batch_size
+            )
             self.model = self.model.to(device_torch)
         return self.model
 
-    def prepare(self,
-                base_dir: str,
-                num_workers: int = 0,
-                verbose: bool = True) -> None:
+    def prepare(
+        self, base_dir: str, num_workers: int = 0, verbose: bool = True
+    ) -> None:
         """
         TODO: describe method
         """
         if verbose:
             print("START PREPARING")
         # you mast split your data on 3 directory
-        train_dir = os.path.join(base_dir, 'train')
-        validation_dir = os.path.join(base_dir, 'val')
-        test_dir = os.path.join(base_dir, 'test')
+        train_dir = os.path.join(base_dir, "train")
+        validation_dir = os.path.join(base_dir, "val")
+        test_dir = os.path.join(base_dir, "test")
 
         # compile generators
         self.dm = InverseNetDataModule(
@@ -107,27 +105,35 @@ class InverseDetector(object):
             width=self.width,
             height=self.height,
             batch_size=self.batch_size,
-            num_workers=num_workers)
+            num_workers=num_workers,
+        )
 
         if verbose:
             print("DATA PREPARED")
 
     @staticmethod
     def define_callbacks(log_dir):
-        checkpoint_callback = ModelCheckpoint(dirpath=log_dir, monitor='val_loss')
-        lr_monitor = LearningRateMonitor(logging_interval='step')
+        checkpoint_callback = ModelCheckpoint(dirpath=log_dir, monitor="val_loss")
+        lr_monitor = LearningRateMonitor(logging_interval="step")
         return [checkpoint_callback, lr_monitor]
 
-    def train(self,
-              log_dir=sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../data/logs/options')))
-              ) -> NPInverseNet:
+    def train(
+        self,
+        log_dir=sys.path.append(
+            os.path.abspath(
+                os.path.join(os.path.dirname(__file__), "../data/logs/options")
+            )
+        ),
+    ) -> NPInverseNet:
         """
         TODO: describe method
         """
         self.create_model()
-        self.trainer = pl.Trainer(max_epochs=self.epochs,
-                                  gpus=self.gpus,
-                                  callbacks=self.define_callbacks(log_dir))
+        self.trainer = pl.Trainer(
+            max_epochs=self.epochs,
+            gpus=self.gpus,
+            callbacks=self.define_callbacks(log_dir),
+        )
         self.trainer.fit(self.model, self.dm)
         self.trainer.test()
         return self.model
@@ -138,9 +144,7 @@ class InverseDetector(object):
         TODO: add ReduceLROnPlateau callback
         """
         model = self.create_model()
-        trainer = pl.Trainer(auto_lr_find=True,
-                             max_epochs=self.epochs,
-                             gpus=self.gpus)
+        trainer = pl.Trainer(auto_lr_find=True, max_epochs=self.epochs, gpus=self.gpus)
         return trainer.tune(model, self.dm)
 
     def test(self) -> List:
@@ -167,9 +171,11 @@ class InverseDetector(object):
         return True
 
     def load_model(self, path_to_model):
-        self.model = NPInverseNet.load_from_checkpoint(path_to_model,
-                                                       map_location=torch.device('cpu'),
-                                                       orientation_output_size=len(self.orientations))
+        self.model = NPInverseNet.load_from_checkpoint(
+            path_to_model,
+            map_location=torch.device("cpu"),
+            orientation_output_size=len(self.orientations),
+        )
         self.model = self.model.to(device_torch)
         self.model.eval()
         return self.model
@@ -199,7 +205,9 @@ class InverseDetector(object):
             path_to_model = model_info["path"]
             self.orientations = model_info["orientations"]
         elif path_to_model.startswith("http"):
-            model_info = modelhub.download_model_by_url(path_to_model, self.get_classname(), "numberplate_orientations")
+            model_info = modelhub.download_model_by_url(
+                path_to_model, self.get_classname(), "numberplate_orientations"
+            )
             path_to_model = model_info["path"]
         self.create_model()
         return self.load_model(path_to_model)

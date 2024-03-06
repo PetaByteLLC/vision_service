@@ -1,6 +1,7 @@
 """
 python3 -m nomeroff_net.text_detectors.base.ocr -f nomeroff_net/text_detectors/base/ocr.py
 """
+
 import os
 import cv2
 import json
@@ -21,18 +22,30 @@ from nomeroff_net.tools.image_processing import normalize_img
 from nomeroff_net.tools.errors import OCRError
 from nomeroff_net.tools.mcm import modelhub, get_device_torch
 from nomeroff_net.tools.augmentations import aug_seed
-from nomeroff_net.tools.ocr_tools import (StrLabelConverter,
-                                          decode_prediction,
-                                          decode_batch)
+from nomeroff_net.tools.ocr_tools import (
+    StrLabelConverter,
+    decode_prediction,
+    decode_batch,
+)
 
 device_torch = get_device_torch()
 
 
 class OCR(object):
 
-    def __init__(self, model_name: str = None, letters: List = None, linear_size: int = 512,
-                 max_text_len: int = 0, height: int = 50, width: int = 200, color_channels: int = 3,
-                 hidden_size: int = 32, backbone: str = "resnet18", **_) -> None:
+    def __init__(
+        self,
+        model_name: str = None,
+        letters: List = None,
+        linear_size: int = 512,
+        max_text_len: int = 0,
+        height: int = 50,
+        width: int = 200,
+        color_channels: int = 3,
+        hidden_size: int = 32,
+        backbone: str = "resnet18",
+        **_,
+    ) -> None:
         self.model_name = model_name
         self.letters = []
         if letters is not None:
@@ -61,17 +74,19 @@ class OCR(object):
         self.path_to_model = None
 
     def init_label_converter(self):
-        self.label_converter = StrLabelConverter("".join(self.letters), self.max_text_len)
+        self.label_converter = StrLabelConverter(
+            "".join(self.letters), self.max_text_len
+        )
 
     @staticmethod
     def get_counter(dirpath: str, verbose: bool = True) -> Tuple[Counter, int]:
         dir_name = os.path.basename(dirpath)
-        ann_dirpath = os.path.join(dirpath, 'ann')
-        letters = ''
+        ann_dirpath = os.path.join(dirpath, "ann")
+        letters = ""
         lens = []
         for file_name in os.listdir(ann_dirpath):
             json_filepath = os.path.join(ann_dirpath, file_name)
-            description = json.load(open(json_filepath, 'r'))['description']
+            description = json.load(open(json_filepath, "r"))["description"]
             lens.append(len(description))
             letters += description
         max_text_len = max(Counter(lens).keys())
@@ -79,7 +94,9 @@ class OCR(object):
             print('Max plate length in "%s":' % dir_name, max_text_len)
         return Counter(letters), max_text_len
 
-    def get_alphabet(self, train_path: str, test_path: str, val_path: str, verbose: bool = True) -> Tuple[List, int]:
+    def get_alphabet(
+        self, train_path: str, test_path: str, val_path: str, verbose: bool = True
+    ) -> Tuple[List, int]:
         c_val, max_text_len_val = self.get_counter(val_path)
         c_train, max_text_len_train = self.get_counter(train_path)
         c_test, max_text_len_test = self.get_counter(test_path)
@@ -94,28 +111,30 @@ class OCR(object):
 
         if max_text_len_val == max_text_len_train:
             if verbose:
-                print('Max plate length in train, test and val do match')
+                print("Max plate length in train, test and val do match")
         else:
-            raise OCRError('Max plate length in train, test and val do not match')
+            raise OCRError("Max plate length in train, test and val do not match")
 
         if letters_train == letters_val:
             if verbose:
-                print('Letters in train, val and test do match')
+                print("Letters in train, val and test do match")
         else:
-            raise OCRError('Letters in train, val and test do not match')
+            raise OCRError("Letters in train, val and test do not match")
 
         self.letters = sorted(list(letters_train))
         self.max_text_len = max_text_len_train
         if verbose:
-            print('Letters:', ' '.join(self.letters))
+            print("Letters:", " ".join(self.letters))
         return self.letters, self.max_text_len
 
-    def prepare(self,
-                path_to_dataset: str,
-                use_aug: bool = False,
-                seed: int = 42,
-                verbose: bool = True,
-                num_workers: int = 0) -> None:
+    def prepare(
+        self,
+        path_to_dataset: str,
+        use_aug: bool = False,
+        seed: int = 42,
+        verbose: bool = True,
+        num_workers: int = 0,
+    ) -> None:
         train_dir = os.path.join(path_to_dataset, "train")
         test_dir = os.path.join(path_to_dataset, "test")
         val_dir = os.path.join(path_to_dataset, "val")
@@ -123,10 +142,8 @@ class OCR(object):
         if verbose:
             print("GET ALPHABET")
         self.letters, self.max_text_len = self.get_alphabet(
-            train_dir,
-            test_dir,
-            val_dir,
-            verbose=verbose)
+            train_dir, test_dir, val_dir, verbose=verbose
+        )
         self.init_label_converter()
 
         if verbose:
@@ -143,7 +160,8 @@ class OCR(object):
             batch_size=self.batch_size,
             num_workers=num_workers,
             seed=seed,
-            with_aug=use_aug)
+            with_aug=use_aug,
+        )
         if verbose:
             print("DATA PREPARED")
 
@@ -151,26 +169,31 @@ class OCR(object):
         """
         TODO: describe method
         """
-        self.model = NPOcrNet(self.letters,
-                              linear_size=self.linear_size,
-                              hidden_size=self.hidden_size,
-                              backbone=self.backbone,
-                              letters_max=len(self.letters) + 1,
-                              label_converter=self.label_converter,
-                              height=self.height,
-                              width=self.width,
-                              color_channels=self.color_channels,
-                              max_text_len=self.max_text_len)
-        if 'resnet' in str(self.backbone):
+        self.model = NPOcrNet(
+            self.letters,
+            linear_size=self.linear_size,
+            hidden_size=self.hidden_size,
+            backbone=self.backbone,
+            letters_max=len(self.letters) + 1,
+            label_converter=self.label_converter,
+            height=self.height,
+            width=self.width,
+            color_channels=self.color_channels,
+            max_text_len=self.max_text_len,
+        )
+        if "resnet" in str(self.backbone):
             self.model.apply(weights_init)
         self.model = self.model.to(device_torch)
         return self.model
 
-    def train(self,
-              log_dir=os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../../../data/logs/ocr')),
-              seed: int = None,
-              ckpt_path: str = None
-              ) -> NPOcrNet:
+    def train(
+        self,
+        log_dir=os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "../../../../../data/logs/ocr")
+        ),
+        seed: int = None,
+        ckpt_path: str = None,
+    ) -> NPOcrNet:
         """
         TODO: describe method
         """
@@ -179,11 +202,13 @@ class OCR(object):
             pl.seed_everything(seed)
         if self.model is None:
             self.create_model()
-        checkpoint_callback = ModelCheckpoint(dirpath=log_dir, monitor='val_loss')
-        lr_monitor = LearningRateMonitor(logging_interval='step')
-        self.trainer = pl.Trainer(max_epochs=self.epochs,
-                                  #gpus=self.gpus,
-                                  callbacks=[checkpoint_callback, lr_monitor])
+        checkpoint_callback = ModelCheckpoint(dirpath=log_dir, monitor="val_loss")
+        lr_monitor = LearningRateMonitor(logging_interval="step")
+        self.trainer = pl.Trainer(
+            max_epochs=self.epochs,
+            # gpus=self.gpus,
+            callbacks=[checkpoint_callback, lr_monitor],
+        )
         self.trainer.fit(self.model, self.dm, ckpt_path=ckpt_path)
         print("[INFO] best model path", checkpoint_callback.best_model_path)
         return self.model
@@ -204,15 +229,12 @@ class OCR(object):
         if self.model is None:
             self.create_model()
 
-        trainer = pl.Trainer(auto_lr_find=True,
-                             max_epochs=self.epochs,
-                             gpus=self.gpus)
+        trainer = pl.Trainer(auto_lr_find=True, max_epochs=self.epochs, gpus=self.gpus)
 
-        num_training = int(len(self.dm.train_image_generator)*percentage) or 1
-        lr_finder = trainer.tuner.lr_find(self.model,
-                                          self.dm,
-                                          num_training=num_training,
-                                          early_stop_threshold=None)
+        num_training = int(len(self.dm.train_image_generator) * percentage) or 1
+        lr_finder = trainer.tuner.lr_find(
+            self.model, self.dm, num_training=num_training, early_stop_threshold=None
+        )
         lr = lr_finder.suggestion()
         print(f"Found lr: {lr}")
         self.model.hparams["learning_rate"] = lr
@@ -223,9 +245,7 @@ class OCR(object):
         xs = []
         if need_preprocess:
             for img in imgs:
-                x = normalize_img(img,
-                                  width=self.width,
-                                  height=self.height)
+                x = normalize_img(img, width=self.width, height=self.height)
                 xs.append(x)
             xs = np.moveaxis(np.array(xs), 3, 1)
         else:
@@ -252,9 +272,13 @@ class OCR(object):
         if return_acc:
             if len(net_out_value):
                 net_out_value = np.array(net_out_value)
-                net_out_value = net_out_value.reshape((net_out_value.shape[1],
-                                                       net_out_value.shape[0],
-                                                       net_out_value.shape[2]))
+                net_out_value = net_out_value.reshape(
+                    (
+                        net_out_value.shape[1],
+                        net_out_value.shape[0],
+                        net_out_value.shape[2],
+                    )
+                )
             return pred_texts, net_out_value
         return pred_texts
 
@@ -281,18 +305,20 @@ class OCR(object):
 
     def load_model(self, path_to_model, nn_class=NPOcrNet):
         self.path_to_model = path_to_model
-        self.model = nn_class.load_from_checkpoint(path_to_model,
-                                                   map_location=torch.device('cpu'),
-                                                   letters=self.letters,
-                                                   linear_size=self.linear_size,
-                                                   hidden_size=self.hidden_size,
-                                                   backbone=self.backbone,
-                                                   letters_max=len(self.letters) + 1,
-                                                   label_converter=self.label_converter,
-                                                   height=self.height,
-                                                   width=self.width,
-                                                   color_channels=self.color_channels,
-                                                   max_text_len=self.max_text_len)
+        self.model = nn_class.load_from_checkpoint(
+            path_to_model,
+            map_location=torch.device("cpu"),
+            letters=self.letters,
+            linear_size=self.linear_size,
+            hidden_size=self.hidden_size,
+            backbone=self.backbone,
+            letters_max=len(self.letters) + 1,
+            label_converter=self.label_converter,
+            height=self.height,
+            width=self.width,
+            color_channels=self.color_channels,
+            max_text_len=self.max_text_len,
+        )
         self.model = self.model.to(device_torch)
         self.model.eval()
         return self.model
@@ -303,9 +329,9 @@ class OCR(object):
             model_info = modelhub.download_model_by_name(self.model_name)
             path_to_model = model_info["path"]
         elif path_to_model.startswith("http"):
-            model_info = modelhub.download_model_by_url(path_to_model,
-                                                        self.model_name,
-                                                        self.model_name)
+            model_info = modelhub.download_model_by_url(
+                path_to_model, self.model_name, self.model_name
+            )
             path_to_model = model_info["path"]
         elif path_to_model.startswith("modelhub://"):
             path_to_model = path_to_model.split("modelhub://")[1]
@@ -337,9 +363,7 @@ class OCR(object):
         self.init_label_converter()
 
         logits = torch.tensor(predicted)
-        logits = logits.reshape(logits.shape[1],
-                                logits.shape[0],
-                                logits.shape[2])
+        logits = logits.reshape(logits.shape[1], logits.shape[0], logits.shape[2])
         input_len, batch_size, vocab_size = logits.size()
         device = logits.device
 
@@ -347,16 +371,15 @@ class OCR(object):
 
         encoded_texts, text_lens = self.label_converter.encode(decode)
         text_lens = torch.tensor([self.max_text_len for _ in range(batch_size)])
-        logits_lens = torch.full(size=(batch_size,), fill_value=input_len, dtype=torch.int32)
+        logits_lens = torch.full(
+            size=(batch_size,), fill_value=input_len, dtype=torch.int32
+        )
 
         acc = functional.ctc_loss(
-            logits,
-            encoded_texts,
-            logits_lens.to(device),
-            text_lens
+            logits, encoded_texts, logits_lens.to(device), text_lens
         )
         return 1 - acc / len(self.letters)
-    
+
     @torch.no_grad()
     def acc_calc(self, dataset, verbose: bool = False) -> float:
         acc = 0
@@ -371,42 +394,84 @@ class OCR(object):
             if pred_text == text:
                 acc += 1
             elif verbose:
-                print(f'\n[INFO] {dataset.paths[idx]}\nPredicted: {pred_text} \t\t\t True: {text}')
+                print(
+                    f"\n[INFO] {dataset.paths[idx]}\nPredicted: {pred_text} \t\t\t True: {text}"
+                )
         return acc / len(dataset)
 
     def val_acc(self, verbose=False) -> float:
         acc = self.acc_calc(self.dm.val_image_generator, verbose=verbose)
-        print('Validaton Accuracy: ', acc, "in", len(self.dm.val_image_generator))
+        print("Validaton Accuracy: ", acc, "in", len(self.dm.val_image_generator))
         return acc
 
     def test_acc(self, verbose=True) -> float:
         acc = self.acc_calc(self.dm.test_image_generator, verbose=verbose)
-        print('Testing Accuracy: ', acc, "in", len(self.dm.test_image_generator))
+        print("Testing Accuracy: ", acc, "in", len(self.dm.test_image_generator))
         return acc
 
     def train_acc(self, verbose=False) -> float:
         acc = self.acc_calc(self.dm.train_image_generator, verbose=verbose)
-        print('Training Accuracy: ', acc, "in", len(self.dm.train_image_generator))
+        print("Training Accuracy: ", acc, "in", len(self.dm.train_image_generator))
         return acc
 
 
 if __name__ == "__main__":
     det = OCR()
     det.get_classname = lambda: "Eu"
-    det.letters = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I",
-                   "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+    det.letters = [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+    ]
     det.max_text_len = 9
-    det.letters_max = len(det.letters)+1
+    det.letters_max = len(det.letters) + 1
     det.init_label_converter()
     det.load()
 
-    image_path = os.path.join(os.getcwd(), "./data/examples/numberplate_zone_images/JJF509.png")
+    image_path = os.path.join(
+        os.getcwd(), "./data/examples/numberplate_zone_images/JJF509.png"
+    )
     img = cv2.imread(image_path)
     xs = det.preprocess([img])
     y = det.predict(xs)
     print("y", y)
 
-    image_path = os.path.join(os.getcwd(), "./data/examples/numberplate_zone_images/RP70012.png")
+    image_path = os.path.join(
+        os.getcwd(), "./data/examples/numberplate_zone_images/RP70012.png"
+    )
     img = cv2.imread(image_path)
     xs = det.preprocess([img])
     y = det.predict(xs)

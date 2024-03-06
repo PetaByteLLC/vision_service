@@ -10,8 +10,8 @@ class Model(nn.Module):
         self.null_label = null_label
 
     def _get_length(self, logit, dim=-1):
-        """ Greed decoder to obtain length from logit"""
-        out = (logit.argmax(dim=-1) == self.null_label)
+        """Greed decoder to obtain length from logit"""
+        out = logit.argmax(dim=-1) == self.null_label
         abn = out.any(dim)
         out = ((out.cumsum(dim) == 1) & out).max(dim)[1]
         out = out + 1  # additional end token
@@ -27,5 +27,5 @@ class Model(nn.Module):
     @staticmethod
     def _get_location_mask(sz, device=None):
         mask = torch.eye(sz, device=device)
-        mask = mask.float().masked_fill(mask == 1, float('-inf'))
+        mask = mask.float().masked_fill(mask == 1, float("-inf"))
         return mask

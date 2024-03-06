@@ -26,26 +26,53 @@ from .model import ViTSTR as Model
 
 class ViTSTR(CrossEntropySystem):
 
-    def __init__(self, charset_train: str, charset_test: str, max_label_length: int,
-                 batch_size: int, lr: float, warmup_pct: float, weight_decay: float,
-                 img_size: Sequence[int], patch_size: Sequence[int], embed_dim: int, num_heads: int,
-                 **kwargs: Any) -> None:
-        super().__init__(charset_train, charset_test, batch_size, lr, warmup_pct, weight_decay)
+    def __init__(
+        self,
+        charset_train: str,
+        charset_test: str,
+        max_label_length: int,
+        batch_size: int,
+        lr: float,
+        warmup_pct: float,
+        weight_decay: float,
+        img_size: Sequence[int],
+        patch_size: Sequence[int],
+        embed_dim: int,
+        num_heads: int,
+        **kwargs: Any
+    ) -> None:
+        super().__init__(
+            charset_train, charset_test, batch_size, lr, warmup_pct, weight_decay
+        )
         self.save_hyperparameters()
         self.max_label_length = max_label_length
         # We don't predict <bos> nor <pad>
-        self.model = Model(img_size=img_size, patch_size=patch_size, depth=12, mlp_ratio=4, qkv_bias=True,
-                           embed_dim=embed_dim, num_heads=num_heads, num_classes=len(self.tokenizer) - 2)
+        self.model = Model(
+            img_size=img_size,
+            patch_size=patch_size,
+            depth=12,
+            mlp_ratio=4,
+            qkv_bias=True,
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            num_classes=len(self.tokenizer) - 2,
+        )
         # Non-zero weight init for the head
         self.model.head.apply(init_weights)
 
     @torch.jit.ignore
     def no_weight_decay(self):
-        return {'model.' + n for n in self.model.no_weight_decay()}
+        return {"model." + n for n in self.model.no_weight_decay()}
 
     def forward(self, images: Tensor, max_length: Optional[int] = None) -> Tensor:
-        max_length = self.max_label_length if max_length is None else min(max_length, self.max_label_length)
-        logits = self.model.forward(images, max_length + 2)  # +2 tokens for [GO] and [s]
+        max_length = (
+            self.max_label_length
+            if max_length is None
+            else min(max_length, self.max_label_length)
+        )
+        logits = self.model.forward(
+            images, max_length + 2
+        )  # +2 tokens for [GO] and [s]
         # Truncate to conform to other models. [GO] in ViTSTR is actually used as the padding (therefore, ignored).
         # First position corresponds to the class token, which is unused and ignored in the original work.
         logits = logits[:, 1:]
@@ -54,5 +81,5 @@ class ViTSTR(CrossEntropySystem):
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
         loss = self.forward_logits_loss(images, labels)[1]
-        self.log('loss', loss)
+        self.log("loss", loss)
         return loss

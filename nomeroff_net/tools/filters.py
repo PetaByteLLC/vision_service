@@ -9,8 +9,12 @@ from skimage.color import gray2rgb
 from typing import List, Dict, Tuple, Union
 
 
-def draw_box(image: np.ndarray, boxs: List[np.ndarray],
-             color: Tuple[int] = (255, 0, 0), thickness: int = 2) -> np.ndarray:
+def draw_box(
+    image: np.ndarray,
+    boxs: List[np.ndarray],
+    color: Tuple[int] = (255, 0, 0),
+    thickness: int = 2,
+) -> np.ndarray:
     for box in boxs:
         # округление координат
         box = np.int0(box)
@@ -52,13 +56,17 @@ def cv_img_mask(nns: List[Dict]) -> List:
     return res
 
 
-def color_splash(image: np.ndarray, masks: List[np.ndarray],
-                 color: Union = (0, 255, 0), white_balance: int = 200) -> List[np.ndarray]:
+def color_splash(
+    image: np.ndarray,
+    masks: List[np.ndarray],
+    color: Union = (0, 255, 0),
+    white_balance: int = 200,
+) -> List[np.ndarray]:
     res = []
     gray = gray2rgb(skimage.color.rgb2gray(image)) * white_balance
     for mask in masks:
         if mask.shape[-1] > 0:
-            mask = (np.sum(mask, -1, keepdims=True) >= 1)
+            mask = np.sum(mask, -1, keepdims=True) >= 1
             fulled = np.full(image.shape, color)
             splash = np.where(mask, fulled, gray).astype(np.uint8)
         else:
@@ -77,7 +85,7 @@ def calc_normalize(hist: Union, reverse: bool = False, min_n: int = 5) -> int:
             break
         level += 1
     if reverse:
-        level = len(hist)-level
+        level = len(hist) - level
     return level
 
 
@@ -86,4 +94,11 @@ def normalize(img: np.ndarray) -> None:
     hist, bins = np.histogram(cv_img.ravel(), 256, [0, 255])
     alpha = calc_normalize(hist)
     beta = calc_normalize(hist, reverse=True)
-    _ = cv2.normalize(cv_img, None, alpha=alpha, beta=beta, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    _ = cv2.normalize(
+        cv_img,
+        None,
+        alpha=alpha,
+        beta=beta,
+        norm_type=cv2.NORM_MINMAX,
+        dtype=cv2.CV_32F,
+    )

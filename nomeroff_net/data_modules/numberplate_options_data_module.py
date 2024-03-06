@@ -6,29 +6,26 @@ from nomeroff_net.data_loaders import ImgGenerator
 
 
 class OptionsNetDataModule(pl.LightningDataModule):
-    def __init__(self,
-                 train_dir=None,
-                 val_dir=None,
-                 test_dir=None,
-                 class_region=None,
-                 class_count_line=None,
-                 orientations=None,
-                 data_loader=ImgGenerator,
-                 width=295,
-                 height=64,
-                 batch_size=32,
-                 num_workers=0):
+    def __init__(
+        self,
+        train_dir=None,
+        val_dir=None,
+        test_dir=None,
+        class_region=None,
+        class_count_line=None,
+        orientations=None,
+        data_loader=ImgGenerator,
+        width=295,
+        height=64,
+        batch_size=32,
+        num_workers=0,
+    ):
         super().__init__()
         self.batch_size = batch_size
         self.num_workers = num_workers
 
         if orientations is None:
-            orientations = [
-                "0°", 
-                "90°", 
-                "180°", 
-                "270°"
-            ]
+            orientations = ["0°", "90°", "180°", "270°"]
         if class_region is None:
             class_region = []
         if class_count_line is None:
@@ -43,7 +40,8 @@ class OptionsNetDataModule(pl.LightningDataModule):
                 width,
                 height,
                 batch_size,
-                [len(class_region), len(class_count_line), len(orientations)])
+                [len(class_region), len(class_count_line), len(orientations)],
+            )
 
         # init validation generator
         self.val = None
@@ -54,7 +52,8 @@ class OptionsNetDataModule(pl.LightningDataModule):
                 width,
                 height,
                 batch_size,
-                [len(class_region), len(class_count_line), len(orientations)])
+                [len(class_region), len(class_count_line), len(orientations)],
+            )
 
         # init test generator
         self.test = None
@@ -65,7 +64,8 @@ class OptionsNetDataModule(pl.LightningDataModule):
                 width,
                 height,
                 batch_size,
-                [len(class_region), len(class_count_line), len(orientations)])
+                [len(class_region), len(class_count_line), len(orientations)],
+            )
 
     def prepare_data(self):
         self.train_image_generator.build_data()
@@ -83,19 +83,19 @@ class OptionsNetDataModule(pl.LightningDataModule):
         self.test = self.test_image_generator
 
     def train_dataloader(self):
-        return DataLoader(self.train,
-                          batch_size=self.batch_size,
-                          num_workers=self.num_workers)
+        return DataLoader(
+            self.train, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def val_dataloader(self):
-        return DataLoader(self.val,
-                          batch_size=self.batch_size,
-                          num_workers=self.num_workers)
+        return DataLoader(
+            self.val, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def test_dataloader(self):
-        return DataLoader(self.test,
-                          batch_size=self.batch_size,
-                          num_workers=self.num_workers)
+        return DataLoader(
+            self.test, batch_size=self.batch_size, num_workers=self.num_workers
+        )
 
     def predict_dataloader(self) -> EVAL_DATALOADERS:
         return self.test_dataloader()

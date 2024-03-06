@@ -25,10 +25,23 @@ from .model import CRNN as Model
 
 class CRNN(CTCSystem):
 
-    def __init__(self, charset_train: str, charset_test: str, max_label_length: int,
-                 batch_size: int, lr: float, warmup_pct: float, weight_decay: float,
-                 img_size: Sequence[int], hidden_size: int, leaky_relu: bool, **kwargs) -> None:
-        super().__init__(charset_train, charset_test, batch_size, lr, warmup_pct, weight_decay)
+    def __init__(
+        self,
+        charset_train: str,
+        charset_test: str,
+        max_label_length: int,
+        batch_size: int,
+        lr: float,
+        warmup_pct: float,
+        weight_decay: float,
+        img_size: Sequence[int],
+        hidden_size: int,
+        leaky_relu: bool,
+        **kwargs
+    ) -> None:
+        super().__init__(
+            charset_train, charset_test, batch_size, lr, warmup_pct, weight_decay
+        )
         self.save_hyperparameters()
         self.model = Model(img_size[0], 3, len(self.tokenizer), hidden_size, leaky_relu)
         self.model.apply(init_weights)
@@ -39,5 +52,5 @@ class CRNN(CTCSystem):
     def training_step(self, batch, batch_idx) -> STEP_OUTPUT:
         images, labels = batch
         loss = self.forward_logits_loss(images, labels)[1]
-        self.log('loss', loss)
+        self.log("loss", loss)
         return loss

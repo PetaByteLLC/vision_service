@@ -14,12 +14,14 @@ from nomeroff_net.tools.image_processing import normalize_img
 
 
 class FraudImgGenerator(Dataset):
-    def __init__(self,
-                 dirpath: str,
-                 img_w: int = 295,
-                 img_h: int = 64,
-                 batch_size: int = 32,
-                 with_aug: bool = False) -> None:
+    def __init__(
+        self,
+        dirpath: str,
+        img_w: int = 295,
+        img_h: int = 64,
+        batch_size: int = 32,
+        with_aug: bool = False,
+    ) -> None:
         self.with_aug = with_aug
         self.cur_index = 0
         self.paths = []
@@ -39,10 +41,12 @@ class FraudImgGenerator(Dataset):
 
         self.n = len(self.samples)
         self.indexes = list(range(self.n))
-        self.batch_count = int(self.n/batch_size)
+        self.batch_count = int(self.n / batch_size)
         self.rezero()
 
-    def load_dataset(self, with_aug: bool, img_dirpath: str, cache_postfix: str = "cache_fake"):
+    def load_dataset(
+        self, with_aug: bool, img_dirpath: str, cache_postfix: str = "cache_fake"
+    ):
         if with_aug:
             cache_postfix = f"{cache_postfix}_aug"
         cache_dirpath = os.path.join(img_dirpath, cache_postfix)
@@ -53,11 +57,16 @@ class FraudImgGenerator(Dataset):
             if not os.path.isfile(os.path.join(img_dirpath, file_name)):
                 continue
             name, ext = os.path.splitext(file_name)
-            if ext == '.png':
+            if ext == ".png":
                 img_filepath = os.path.join(img_dirpath, file_name)
                 self.images_path.append(img_filepath)
                 x_filepath = self.generate_cache_x_in_path(img_filepath, cache_dirpath)
-                self.samples.append([x_filepath, np.array([int(file_name.startswith("fake"))], dtype=np.float32)])
+                self.samples.append(
+                    [
+                        x_filepath,
+                        np.array([int(file_name.startswith("fake"))], dtype=np.float32),
+                    ]
+                )
 
         self.added_samples_to_round_batch()
         self.n = len(self.samples)
@@ -82,7 +91,9 @@ class FraudImgGenerator(Dataset):
     def get_x_from_path(x_path: str) -> torch.Tensor:
         return torch.load(x_path)
 
-    def generate_cache_x_in_path(self, img_path: str, cache_dirpath: str, newsize: Tuple = None) -> str:
+    def generate_cache_x_in_path(
+        self, img_path: str, cache_dirpath: str, newsize: Tuple = None
+    ) -> str:
         x_path = self.generate_x_path(img_path, cache_dirpath)
 
         if os.path.exists(x_path):
@@ -90,10 +101,11 @@ class FraudImgGenerator(Dataset):
 
         if newsize is None:
             newsize = (self.img_w, self.img_h)
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path).convert("RGB")
         img = img.resize(newsize)
         if self.with_aug:
             from nomeroff_net.tools.augmentations import aug
+
             img = np.array(img)
             imgs = aug([img])
             img = Image.fromarray(imgs[0])
@@ -105,7 +117,7 @@ class FraudImgGenerator(Dataset):
     def generate_x_path(img_path: str, cache_dirpath: str):
         filename, file_extension = os.path.splitext(img_path)
         filename = os.path.basename(filename)
-        x_path = os.path.join(cache_dirpath, f'{filename}.pt')
+        x_path = os.path.join(cache_dirpath, f"{filename}.pt")
         return x_path
 
     def __getitem__(self, index):
@@ -120,9 +132,11 @@ class FraudImgGenerator(Dataset):
         return x, y[0]
 
     def prepare_transformers(self):
-        self.list_transforms = transforms.Compose([
-            transforms.ToTensor(),
-        ])
+        self.list_transforms = transforms.Compose(
+            [
+                transforms.ToTensor(),
+            ]
+        )
 
     def transform(self, img) -> torch.Tensor:
         x = self.list_transforms(img)
@@ -143,7 +157,10 @@ class FraudImgGenerator(Dataset):
         self.cur_index += 1
         if self.cur_index >= self.n:
             self.cur_index = 0
-        return self.images_path[self.indexes[self.cur_index]], self.discs[self.indexes[self.cur_index]]
+        return (
+            self.images_path[self.indexes[self.cur_index]],
+            self.discs[self.indexes[self.cur_index]],
+        )
 
     def run_iteration(self, with_aug=False):
         ys = [[], []]
@@ -153,7 +170,9 @@ class FraudImgGenerator(Dataset):
             x, y = self.next_sample()
             paths.append(x)
             img = cv2.imread(x)
-            x = normalize_img(img, with_aug=with_aug, width=self.img_w, height=self.img_h)
+            x = normalize_img(
+                img, with_aug=with_aug, width=self.img_w, height=self.img_h
+            )
             xs.append(x)
             ys[0].append(y[0])
             ys[1].append(y[1])

@@ -2,6 +2,7 @@
 Numberplate OCR Model
 python3 -m nomeroff_net.nnmodels.ocr_model -f nomeroff_net/nnmodels/ocr_model.py
 """
+
 import torch
 import torch.nn as nn
 from typing import List, Any
@@ -14,15 +15,17 @@ from nomeroff_net.tools.mcm import get_device_torch
 
 def weights_init(m):
     classname = m.__class__.__name__
-    if classname.find('Conv') != -1:
+    if classname.find("Conv") != -1:
         m.weight.data.normal_(0.0, 0.02)
-    elif classname.find('BatchNorm') != -1:
+    elif classname.find("BatchNorm") != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
 
 
 class BlockRNN(nn.Module):
-    def __init__(self, in_size, hidden_size, out_size, bidirectional, recurrent_nn=nn.LSTM):
+    def __init__(
+        self, in_size, hidden_size, out_size, bidirectional, recurrent_nn=nn.LSTM
+    ):
         super().__init__()
         self.in_size = in_size
         self.hidden_size = hidden_size
@@ -30,7 +33,9 @@ class BlockRNN(nn.Module):
         self.bidirectional = bidirectional
 
         # layers
-        self.rnn = recurrent_nn(in_size, hidden_size, bidirectional=bidirectional, batch_first=True)
+        self.rnn = recurrent_nn(
+            in_size, hidden_size, bidirectional=bidirectional, batch_first=True
+        )
 
     def forward(self, batch, add_output=False):
         """
@@ -47,23 +52,25 @@ class BlockRNN(nn.Module):
 
 
 class NPOcrNet(pl.LightningModule):
-    def __init__(self,
-                 letters: List = None,
-                 letters_max: int = 0,
-                 max_text_len: int = 8,
-                 learning_rate: float = 0.02,
-                 height: int = 50,
-                 width: int = 200,
-                 color_channels: int = 3,
-                 bidirectional: bool = True,
-                 label_converter: Any = None,
-                 val_dataset: Any = None,
-                 weight_decay: float = 1e-5,
-                 momentum: float = 0.9,
-                 clip_norm: int = 5,
-                 hidden_size=32,
-                 linear_size=512,
-                 backbone=None):
+    def __init__(
+        self,
+        letters: List = None,
+        letters_max: int = 0,
+        max_text_len: int = 8,
+        learning_rate: float = 0.02,
+        height: int = 50,
+        width: int = 200,
+        color_channels: int = 3,
+        bidirectional: bool = True,
+        label_converter: Any = None,
+        val_dataset: Any = None,
+        weight_decay: float = 1e-5,
+        momentum: float = 0.9,
+        clip_norm: int = 5,
+        hidden_size=32,
+        linear_size=512,
+        backbone=None,
+    ):
         super().__init__()
         self.save_hyperparameters()
 
@@ -88,25 +95,29 @@ class NPOcrNet(pl.LightningModule):
         if backbone is None:
             backbone = resnet18
         conv_nn = backbone(pretrained=True)
-        if 'resnet' in str(backbone):
+        if "resnet" in str(backbone):
             conv_modules = list(conv_nn.children())[:-3]
-        elif 'efficientnet' in str(backbone):
+        elif "efficientnet" in str(backbone):
             conv_modules = list(conv_nn.children())[:-2]
-        elif 'shufflenet' in str(backbone):
+        elif "shufflenet" in str(backbone):
             conv_modules = list(conv_nn.children())[:-3]
         else:
             raise NotImplementedError(backbone)
         self.conv_nn = nn.Sequential(*conv_modules)
-        _, backbone_c, backbone_h, backbone_w = self.conv_nn(torch.rand((1, color_channels, height, width))).shape
+        _, backbone_c, backbone_h, backbone_w = self.conv_nn(
+            torch.rand((1, color_channels, height, width))
+        ).shape
 
         assert backbone_w > max_text_len
 
         # RNN + Linear
-        self.linear1 = nn.Linear(backbone_c*backbone_h, self.linear_size)
-        self.recurrent_layer1 = BlockRNN(self.linear_size, hidden_size, hidden_size,
-                                         bidirectional=bidirectional)
-        self.recurrent_layer2 = BlockRNN(hidden_size, hidden_size, letters_max,
-                                         bidirectional=bidirectional)
+        self.linear1 = nn.Linear(backbone_c * backbone_h, self.linear_size)
+        self.recurrent_layer1 = BlockRNN(
+            self.linear_size, hidden_size, hidden_size, bidirectional=bidirectional
+        )
+        self.recurrent_layer2 = BlockRNN(
+            hidden_size, hidden_size, letters_max, bidirectional=bidirectional
+        )
 
         self.linear2 = nn.Linear(hidden_size * 2, letters_max)
 
@@ -121,7 +132,7 @@ class NPOcrNet(pl.LightningModule):
         forward
         """
         batch_size = batch.size(0)
-        
+
         # convolutions
         batch = self.conv_nn(batch)
 
@@ -141,7 +152,7 @@ class NPOcrNet(pl.LightningModule):
         return batch
 
     def init_loss(self):
-        self.criterion = nn.CTCLoss(blank=0, zero_infinity=True, reduction='mean')
+        self.criterion = nn.CTCLoss(blank=0, zero_infinity=True, reduction="mean")
 
     def calculate_loss(self, logits, texts):
         if self.criterion is None:
@@ -153,13 +164,11 @@ class NPOcrNet(pl.LightningModule):
         # encode inputs
         logits = logits.log_softmax(2)
         encoded_texts, text_lens = self.label_converter.encode(texts)
-        logits_lens = torch.full(size=(batch_size,), fill_value=input_len, dtype=torch.int32)
+        logits_lens = torch.full(
+            size=(batch_size,), fill_value=input_len, dtype=torch.int32
+        )
         # calculate ctc
-        loss = self.criterion(
-            logits,
-            encoded_texts,
-            logits_lens.to(device),
-            text_lens)
+        loss = self.criterion(logits, encoded_texts, logits_lens.to(device), text_lens)
         return loss
 
     def step(self, batch):
@@ -170,7 +179,7 @@ class NPOcrNet(pl.LightningModule):
 
     def on_save_checkpoint(self, _):
         if self.current_epoch and self.val_dataset:
-            device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             print_prediction(self, self.val_dataset, device, self.label_converter)
             plot_loss(self.current_epoch, self.train_losses, self.val_losses)
 
@@ -180,63 +189,60 @@ class NPOcrNet(pl.LightningModule):
             lr=self.learning_rate,
             nesterov=True,
             weight_decay=self.weight_decay,
-            momentum=self.momentum)
+            momentum=self.momentum,
+        )
         return optimizer
 
     def training_step(self, batch, batch_idx):
         loss = self.step(batch)
-        self.log('train_loss', loss, on_step=True, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "train_loss", loss, on_step=True, on_epoch=True, prog_bar=True, logger=True
+        )
         tqdm_dict = {
-            'train_loss': loss,
+            "train_loss": loss,
         }
-        return {
-            'loss': loss,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        }
+        return {"loss": loss, "progress_bar": tqdm_dict, "log": tqdm_dict}
 
     def validation_step(self, batch, batch_idx):
         loss = self.step(batch)
-        self.log('val_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "val_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
         tqdm_dict = {
-            'val_loss': loss,
+            "val_loss": loss,
         }
-        return {
-            'val_loss': loss,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        }
+        return {"val_loss": loss, "progress_bar": tqdm_dict, "log": tqdm_dict}
 
     def test_step(self, batch, batch_idx):
         loss = self.step(batch)
-        self.log('test_loss', loss, on_step=False, on_epoch=True, prog_bar=True, logger=True)
+        self.log(
+            "test_loss", loss, on_step=False, on_epoch=True, prog_bar=True, logger=True
+        )
         tqdm_dict = {
-            'test_loss': loss,
+            "test_loss": loss,
         }
-        return {
-            'test_loss': loss,
-            'progress_bar': tqdm_dict,
-            'log': tqdm_dict
-        }
+        return {"test_loss": loss, "progress_bar": tqdm_dict, "log": tqdm_dict}
 
 
 if __name__ == "__main__":
     h, w, c, b = 50, 200, 3, 1
-    net = NPOcrNet(letters=["A", "B"],
-                   letters_max=2,
-                   max_text_len=8,
-                   learning_rate=0.02,
-                   bidirectional=True,
-                   label_converter=None,
-                   val_dataset=None,
-                   height=h,
-                   width=w,
-                   color_channels=c,
-                   weight_decay=1e-5,
-                   momentum=0.9,
-                   clip_norm=5,
-                   hidden_size=32,
-                   backbone=resnet18)
+    net = NPOcrNet(
+        letters=["A", "B"],
+        letters_max=2,
+        max_text_len=8,
+        learning_rate=0.02,
+        bidirectional=True,
+        label_converter=None,
+        val_dataset=None,
+        height=h,
+        width=w,
+        color_channels=c,
+        weight_decay=1e-5,
+        momentum=0.9,
+        clip_norm=5,
+        hidden_size=32,
+        backbone=resnet18,
+    )
     device = get_device_torch()
     net = net.to(device)
     xs = torch.rand((b, c, h, w)).to(device)

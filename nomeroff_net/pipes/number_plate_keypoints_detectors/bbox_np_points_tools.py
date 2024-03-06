@@ -5,18 +5,21 @@ import collections
 from typing import List, Dict, Tuple, Union, Any
 from collections import OrderedDict
 
-from nomeroff_net.tools.image_processing import (fline,
-                                                 distance,
-                                                 linear_line_matrix,
-                                                 get_y_by_matrix,
-                                                 find_distances,
-                                                 fix_clockwise2,
-                                                 find_min_x_idx,
-                                                 detect_intersection,
-                                                 reshape_points)
+from nomeroff_net.tools.image_processing import (
+    fline,
+    distance,
+    linear_line_matrix,
+    get_y_by_matrix,
+    find_distances,
+    fix_clockwise2,
+    find_min_x_idx,
+    detect_intersection,
+    reshape_points,
+)
 
 try:
     from .cpp_bindings.cpp_bindings import find_char_boxes, find_word_boxes
+
     CPP_BIND_AVAILABLE = True
 except Exception as e:
     CPP_BIND_AVAILABLE = False
@@ -37,7 +40,9 @@ def copy_state_dict(state_dict: Dict) -> OrderedDict:
     return new_state_dict
 
 
-def get_det_boxes(textmap, linkmap, text_threshold, link_threshold, low_text, use_cpp_bindings=True):
+def get_det_boxes(
+    textmap, linkmap, text_threshold, link_threshold, low_text, use_cpp_bindings=True
+):
     """
     get det boxes
     """
@@ -51,12 +56,20 @@ def get_det_boxes(textmap, linkmap, text_threshold, link_threshold, low_text, us
     ret, link_score = cv2.threshold(linkmap, link_threshold, 1, 0)
 
     text_score_comb = np.clip(text_score + link_score, 0, 1)
-    n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(text_score_comb.astype(np.uint8),
-                                                                          connectivity=4)
+    n_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(
+        text_score_comb.astype(np.uint8), connectivity=4
+    )
 
     if CPP_BIND_AVAILABLE and use_cpp_bindings:
-        det, mapper = find_word_boxes(textmap, labels, n_labels, stats,
-                                      text_threshold, fast_mode=True, rotated_box=True)
+        det, mapper = find_word_boxes(
+            textmap,
+            labels,
+            n_labels,
+            stats,
+            text_threshold,
+            fast_mode=True,
+            rotated_box=True,
+        )
     else:
         det = []
         mapper = []
@@ -73,7 +86,9 @@ def get_det_boxes(textmap, linkmap, text_threshold, link_threshold, low_text, us
             # make segmentation map
             segmap = np.zeros(textmap.shape, dtype=np.uint8)
             segmap[labels == k] = 255
-            segmap[np.logical_and(link_score == 1, text_score == 0)] = 0  # remove link area
+            segmap[np.logical_and(link_score == 1, text_score == 0)] = (
+                0  # remove link area
+            )
             x, y = stats[k, cv2.CC_STAT_LEFT], stats[k, cv2.CC_STAT_TOP]
             w, h = stats[k, cv2.CC_STAT_WIDTH], stats[k, cv2.CC_STAT_HEIGHT]
             niter = int(math.sqrt(size * min(w, h) / (w * h)) * 2)
@@ -91,7 +106,11 @@ def get_det_boxes(textmap, linkmap, text_threshold, link_threshold, low_text, us
             segmap[sy:ey, sx:ex] = cv2.dilate(segmap[sy:ey, sx:ex], kernel)
 
             # make box
-            np_contours = np.roll(np.array(np.where(segmap != 0)), 1, axis=0).transpose().reshape(-1, 2)
+            np_contours = (
+                np.roll(np.array(np.where(segmap != 0)), 1, axis=0)
+                .transpose()
+                .reshape(-1, 2)
+            )
             rectangle = cv2.minAreaRect(np_contours)
             box = cv2.boxPoints(rectangle)
 
@@ -114,8 +133,11 @@ def get_det_boxes(textmap, linkmap, text_threshold, link_threshold, low_text, us
     return det
 
 
-def split_boxes(bboxes: List[Union[np.ndarray, np.ndarray]], dimensions: List[Dict],
-                similarity_range: int = 0.5) -> Tuple[List[int], List[int]]:
+def split_boxes(
+    bboxes: List[Union[np.ndarray, np.ndarray]],
+    dimensions: List[Dict],
+    similarity_range: int = 0.5,
+) -> Tuple[List[int], List[int]]:
     """
     TODO: describe function
     """
@@ -123,16 +145,18 @@ def split_boxes(bboxes: List[Union[np.ndarray, np.ndarray]], dimensions: List[Di
     garbage_bboxes_idx = []
     max_dy = 0
     if len(bboxes):
-        max_dy = max([dimension['dy'] for dimension in dimensions])
+        max_dy = max([dimension["dy"] for dimension in dimensions])
     for i, (bbox, dimension) in enumerate(zip(bboxes, dimensions)):
-        if max_dy * similarity_range <= dimension['dy']:
+        if max_dy * similarity_range <= dimension["dy"]:
             np_bboxes_idx.append(i)
         else:
             garbage_bboxes_idx.append(i)
     return np_bboxes_idx, garbage_bboxes_idx
 
 
-def detect_intersection_norm_dd(matrix1: np.ndarray, matrix2: np.ndarray, d1: float, d2: float) -> np.ndarray:
+def detect_intersection_norm_dd(
+    matrix1: np.ndarray, matrix2: np.ndarray, d1: float, d2: float
+) -> np.ndarray:
     """
     TODO: describe function
     """
@@ -143,8 +167,7 @@ def detect_intersection_norm_dd(matrix1: np.ndarray, matrix2: np.ndarray, d1: fl
     return np.linalg.solve(x, y)
 
 
-def detect_distance_from_point_to_line(matrix: List[np.ndarray],
-                                       point: Union) -> float:
+def detect_distance_from_point_to_line(matrix: List[np.ndarray], point: Union) -> float:
     """
     Определение растояния от точки к линии
     https://ru.onlinemschool.com/math/library/analytic_geometry/p_line1/
@@ -154,7 +177,7 @@ def detect_distance_from_point_to_line(matrix: List[np.ndarray],
     c = matrix[2]
     x = point[0]
     y = point[1]
-    return abs(a * x + b * y - c) / math.sqrt(a ** 2 + b ** 2)
+    return abs(a * x + b * y - c) / math.sqrt(a**2 + b**2)
 
 
 def fix_clockwise(target_points: List) -> List:
@@ -163,20 +186,25 @@ def fix_clockwise(target_points: List) -> List:
     """
     stat1 = fline(target_points[0], target_points[1])
     stat2 = fline(target_points[0], target_points[2])
-    if target_points[0][0] == target_points[1][0] and (target_points[0][1] > target_points[1][1]):
+    if target_points[0][0] == target_points[1][0] and (
+        target_points[0][1] > target_points[1][1]
+    ):
         stat1[2] = -stat1[2]
 
     if stat2[2] < stat1[2]:
-        target_points = np.array([target_points[0], target_points[3], target_points[2], target_points[1]])
+        target_points = np.array(
+            [target_points[0], target_points[3], target_points[2], target_points[1]]
+        )
     return target_points
 
 
 def make_offsets(
-        bbox: Tuple,
-        distanses_offset_left_max_percentage: float,
-        offset_top_max_percentage: float,
-        offset_right_max_percentage: float,
-        offset_bottom_max_percentage: float):
+    bbox: Tuple,
+    distanses_offset_left_max_percentage: float,
+    offset_top_max_percentage: float,
+    offset_right_max_percentage: float,
+    offset_bottom_max_percentage: float,
+):
 
     distanses_offset_left_percentage = distanses_offset_left_max_percentage
     offset_top_percentage = offset_top_max_percentage
@@ -197,31 +225,34 @@ def make_offsets(
         distanses_offset_left_percentage,
         offset_top_percentage,
         offset_right_percentage,
-        offset_bottom_percentage
+        offset_bottom_percentage,
     ]
     return offsets
 
 
 def addopt_rect_to_bbox_make_points(
-        distanses: List,
-        bbox: Tuple,
-        distanses_offset_left_max_percentage: float,
-        offset_top_max_percentage: float,
-        offset_right_max_percentage: float,
-        offset_bottom_max_percentage: float):
+    distanses: List,
+    bbox: Tuple,
+    distanses_offset_left_max_percentage: float,
+    offset_top_max_percentage: float,
+    offset_right_max_percentage: float,
+    offset_bottom_max_percentage: float,
+):
     points = []
-    offsets = make_offsets(bbox,
-                           distanses_offset_left_max_percentage,
-                           offset_top_max_percentage,
-                           offset_right_max_percentage,
-                           offset_bottom_max_percentage)
+    offsets = make_offsets(
+        bbox,
+        distanses_offset_left_max_percentage,
+        offset_top_max_percentage,
+        offset_right_max_percentage,
+        offset_bottom_max_percentage,
+    )
 
     cnt = len(distanses)
     for i in range(cnt):
         i_next = i + 1
         if i_next == cnt:
             i_next = 0
-        offsets[i] = distanses[i_next]['d'] * offsets[i] / 100
+        offsets[i] = distanses[i_next]["d"] * offsets[i] / 100
     for i in range(cnt):
         i_prev = i
         i_next = i + 1
@@ -230,16 +261,24 @@ def addopt_rect_to_bbox_make_points(
         offset1 = offsets[i_prev]
         offset2 = offsets[i_next]
         points.append(
-            detect_intersection_norm_dd(distanses[i_prev]['matrix'], distanses[i_next]['matrix'], offset1, offset2))
+            detect_intersection_norm_dd(
+                distanses[i_prev]["matrix"],
+                distanses[i_next]["matrix"],
+                offset1,
+                offset2,
+            )
+        )
     return points
 
 
-def addopt_rect_to_bbox(target_points: List,
-                        bbox: Tuple,
-                        distanses_offset_left_max_percentage: float,
-                        offset_top_max_percentage: float,
-                        offset_right_max_percentage: float,
-                        offset_bottom_max_percentage: float) -> np.ndarray:
+def addopt_rect_to_bbox(
+    target_points: List,
+    bbox: Tuple,
+    distanses_offset_left_max_percentage: float,
+    offset_top_max_percentage: float,
+    offset_right_max_percentage: float,
+    offset_bottom_max_percentage: float,
+) -> np.ndarray:
     """
     TODO: describe function
     """
@@ -250,13 +289,14 @@ def addopt_rect_to_bbox(target_points: List,
         distanses_offset_left_max_percentage,
         offset_top_max_percentage,
         offset_right_max_percentage,
-        offset_bottom_max_percentage)
+        offset_bottom_max_percentage,
+    )
 
     points = reshape_points(points, 3)
 
     distanses = find_distances(points)
 
-    if distanses[3]['coef'][2] == 90:
+    if distanses[3]["coef"][2] == 90:
         return np.array(points)
 
     h = bbox[0]
@@ -265,10 +305,10 @@ def addopt_rect_to_bbox(target_points: List,
     matrix_left = linear_line_matrix([0, 0], [0, h])
     matrix_right = linear_line_matrix([w, 0], [w, h])
 
-    p_left_top = detect_intersection(matrix_left, distanses[1]['matrix'])
-    p_left_bottom = detect_intersection(matrix_left, distanses[3]['matrix'])
-    p_right_top = detect_intersection(matrix_right, distanses[1]['matrix'])
-    p_right_bottom = detect_intersection(matrix_right, distanses[3]['matrix'])
+    p_left_top = detect_intersection(matrix_left, distanses[1]["matrix"])
+    p_left_bottom = detect_intersection(matrix_left, distanses[3]["matrix"])
+    p_right_top = detect_intersection(matrix_right, distanses[1]["matrix"])
+    p_right_bottom = detect_intersection(matrix_right, distanses[3]["matrix"])
 
     offset_left_bottom = distance(points[0], p_left_bottom)
     offset_left_top = distance(points[1], p_left_top)
@@ -280,24 +320,40 @@ def addopt_rect_to_bbox(target_points: List,
     if not over_left_top and not over_left_bottom:
         if offset_left_top > offset_left_bottom:
             points[0] = p_left_bottom
-            left_distance = detect_distance_from_point_to_line(distanses[0]['matrix'], p_left_bottom)
-            points[1] = detect_intersection_norm_dd(distanses[0]['matrix'], distanses[1]['matrix'], left_distance, 0)
+            left_distance = detect_distance_from_point_to_line(
+                distanses[0]["matrix"], p_left_bottom
+            )
+            points[1] = detect_intersection_norm_dd(
+                distanses[0]["matrix"], distanses[1]["matrix"], left_distance, 0
+            )
         else:
             points[1] = p_left_top
-            left_distance = detect_distance_from_point_to_line(distanses[0]['matrix'], p_left_top)
-            points[0] = detect_intersection_norm_dd(distanses[3]['matrix'], distanses[0]['matrix'], 0, left_distance)
+            left_distance = detect_distance_from_point_to_line(
+                distanses[0]["matrix"], p_left_top
+            )
+            points[0] = detect_intersection_norm_dd(
+                distanses[3]["matrix"], distanses[0]["matrix"], 0, left_distance
+            )
 
     over_right_top = points[2][0] > w
     over_right_bottom = points[3][0] > w
     if not over_right_top and not over_right_bottom:
         if offset_right_top > offset_right_bottom:
             points[3] = p_right_bottom
-            right_distance = detect_distance_from_point_to_line(distanses[2]['matrix'], p_right_bottom)
-            points[2] = detect_intersection_norm_dd(distanses[1]['matrix'], distanses[2]['matrix'], 0, right_distance)
+            right_distance = detect_distance_from_point_to_line(
+                distanses[2]["matrix"], p_right_bottom
+            )
+            points[2] = detect_intersection_norm_dd(
+                distanses[1]["matrix"], distanses[2]["matrix"], 0, right_distance
+            )
         else:
             points[2] = p_right_top
-            right_distance = detect_distance_from_point_to_line(distanses[2]['matrix'], p_right_top)
-            points[3] = detect_intersection_norm_dd(distanses[2]['matrix'], distanses[3]['matrix'], right_distance, 0)
+            right_distance = detect_distance_from_point_to_line(
+                distanses[2]["matrix"], p_right_top
+            )
+            points[3] = detect_intersection_norm_dd(
+                distanses[2]["matrix"], distanses[3]["matrix"], right_distance, 0
+            )
 
     return np.array(points)
 
@@ -339,10 +395,13 @@ def prepare_image_text(img: np.ndarray) -> np.ndarray:
     """
     gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    gray_image = cv2.normalize(gray_image, None, alpha=0, beta=255,
-                               norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+    gray_image = cv2.normalize(
+        gray_image, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
+    )
 
-    (thresh, black_and_white_image) = cv2.threshold(gray_image, 127, 255, cv2.THRESH_BINARY)
+    (thresh, black_and_white_image) = cv2.threshold(
+        gray_image, 127, 255, cv2.THRESH_BINARY
+    )
     return black_and_white_image
 
 
@@ -362,7 +421,14 @@ def detect_best_perspective(bw_images: List[np.ndarray]) -> int:
         max_stat_count = img_stat_dict[max_stat]
         min_stat = min(img_stat_dict, key=int)
         min_stat_count = img_stat_dict[min_stat]
-        res.append({'max': max_stat, 'min': min_stat, 'maxCnt': max_stat_count, 'minCnt': min_stat_count})
+        res.append(
+            {
+                "max": max_stat,
+                "min": min_stat,
+                "maxCnt": max_stat_count,
+                "minCnt": min_stat_count,
+            }
+        )
 
         if min_stat < diff:
             idx = i
@@ -410,12 +476,17 @@ def make_rect_variants(propably_points: List, quality_profile: List = None) -> L
 
     distanses = find_distances(propably_points)
 
-    point_centre_left = [propably_points[0][0] + (propably_points[1][0] - propably_points[0][0]) / 2,
-                         propably_points[0][1] + (propably_points[1][1] - propably_points[0][1]) / 2]
+    point_centre_left = [
+        propably_points[0][0] + (propably_points[1][0] - propably_points[0][0]) / 2,
+        propably_points[0][1] + (propably_points[1][1] - propably_points[0][1]) / 2,
+    ]
 
     if distanses[3]["matrix"][1] == 0:
         return [propably_points]
-    point_bottom_left = [point_centre_left[0], get_y_by_matrix(distanses[3]["matrix"], point_centre_left[0])]
+    point_bottom_left = [
+        point_centre_left[0],
+        get_y_by_matrix(distanses[3]["matrix"], point_centre_left[0]),
+    ]
     dx = propably_points[0][0] - point_bottom_left[0]
     dy = propably_points[0][1] - point_bottom_left[1]
 
@@ -424,7 +495,7 @@ def make_rect_variants(propably_points: List, quality_profile: List = None) -> L
 
     if step_adaptive:
         d_max = distance(point_centre_left, propably_points[0])
-        dd = math.sqrt(dx ** 2 + dy ** 2)
+        dd = math.sqrt(dx**2 + dy**2)
         steps_all = int(d_max / dd)
 
         step = int((steps_all * 2) / steps)
@@ -449,9 +520,13 @@ def normalize_perspective_images(images: List or np.ndarray) -> List[np.ndarray]
     return new_images
 
 
-def filter_boxes(bboxes: List[Union[np.ndarray, np.ndarray]], dimensions: List[Dict],
-                 target_points: Any,
-                 np_bboxes_idx: List[int], filter_range: int = 0.7) -> Tuple[List[int], List[int], int]:
+def filter_boxes(
+    bboxes: List[Union[np.ndarray, np.ndarray]],
+    dimensions: List[Dict],
+    target_points: Any,
+    np_bboxes_idx: List[int],
+    filter_range: int = 0.7,
+) -> Tuple[List[int], List[int], int]:
     """
     TODO: describe function
     """
@@ -461,15 +536,15 @@ def filter_boxes(bboxes: List[Union[np.ndarray, np.ndarray]], dimensions: List[D
     garbage_bboxes_idx = []
     max_dy = 0
     if len(bboxes):
-        max_dy = max([dimension['dy'] for dimension in dimensions])
+        max_dy = max([dimension["dy"] for dimension in dimensions])
     for i, (bbox, dimension) in enumerate(zip(bboxes, dimensions)):
         if i in np_bboxes_idx:
-            coef = dimension['dy']/max_dy
+            coef = dimension["dy"] / max_dy
             if coef > filter_range:
                 new_np_bboxes_idx.append(i)
             else:
-                boxify_factor = dimension['dx']/dimension['dy']
-                dx_offset = round(dimension['dx']/2)
+                boxify_factor = dimension["dx"] / dimension["dy"]
+                dx_offset = round(dimension["dx"] / 2)
                 if bbox[0][0] <= dx_offset and 0.7 < boxify_factor < 1.7:
                     garbage_bboxes_idx.append(i)
                 else:
@@ -477,8 +552,7 @@ def filter_boxes(bboxes: List[Union[np.ndarray, np.ndarray]], dimensions: List[D
         else:
             garbage_bboxes_idx.append(i)
 
-    probably_count_lines = round(dy/max_dy)
+    probably_count_lines = round(dy / max_dy)
     probably_count_lines = 1 if probably_count_lines < 1 else probably_count_lines
     probably_count_lines = 3 if probably_count_lines > 3 else probably_count_lines
     return new_np_bboxes_idx, garbage_bboxes_idx, probably_count_lines
-

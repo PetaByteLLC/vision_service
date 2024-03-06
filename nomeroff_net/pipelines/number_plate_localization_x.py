@@ -11,16 +11,20 @@ class NumberPlateLocalizationX(Pipeline):
     Number Plate Localization
     """
 
-    def __init__(self,
-                 task,
-                 image_loader: Optional[Union[str, BaseImageLoader]],
-                 path_to_model="latest",
-                 **kwargs):
+    def __init__(
+        self,
+        task,
+        image_loader: Optional[Union[str, BaseImageLoader]],
+        path_to_model="latest",
+        **kwargs
+    ):
         super().__init__(task, image_loader, **kwargs)
         self.detector = Detector()
         self.detector.load(path_to_model)
 
-    def sanitize_parameters(self, img_size=None, stride=None, min_accuracy=None, **kwargs):
+    def sanitize_parameters(
+        self, img_size=None, stride=None, min_accuracy=None, **kwargs
+    ):
         parameters = {}
         postprocess_parameters = {}
         if img_size is not None:
@@ -47,8 +51,7 @@ class NumberPlateLocalizationX(Pipeline):
     def postprocess(self, inputs: Any, **postprocess_parameters: Dict) -> Any:
         model_outputs, images, orig_images = unzip(inputs)
         orig_img_shapes = [img.shape for img in orig_images]
-        output = self.detector.postprocessing(model_outputs,
-                                              images,
-                                              orig_img_shapes,
-                                              **postprocess_parameters)
+        output = self.detector.postprocessing(
+            model_outputs, images, orig_img_shapes, **postprocess_parameters
+        )
         return unzip([output, orig_images])

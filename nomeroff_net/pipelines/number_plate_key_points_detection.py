@@ -2,7 +2,9 @@ from torch import no_grad
 from typing import Any, Dict, Optional, Union
 from nomeroff_net.image_loaders import BaseImageLoader
 from nomeroff_net.pipelines.base import Pipeline
-from nomeroff_net.pipes.number_plate_keypoints_detectors.bbox_np_points import NpPointsCraft
+from nomeroff_net.pipes.number_plate_keypoints_detectors.bbox_np_points import (
+    NpPointsCraft,
+)
 from nomeroff_net.tools import unzip
 
 
@@ -11,12 +13,14 @@ class NumberPlateKeyPointsDetection(Pipeline):
     Number Plate Localization
     """
 
-    def __init__(self,
-                 task,
-                 image_loader: Optional[Union[str, BaseImageLoader]],
-                 mtl_model_path: str = "latest",
-                 refiner_model_path: str = "latest",
-                 **kwargs):
+    def __init__(
+        self,
+        task,
+        image_loader: Optional[Union[str, BaseImageLoader]],
+        mtl_model_path: str = "latest",
+        refiner_model_path: str = "latest",
+        **kwargs
+    ):
         super().__init__(task, image_loader, **kwargs)
         self.detector = NpPointsCraft()
         self.detector.load(mtl_model_path, refiner_model_path)

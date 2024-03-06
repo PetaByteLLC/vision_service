@@ -10,7 +10,13 @@ HOME = os.getcwd()
 from supervision.draw.color import ColorPalette
 from supervision.video.source import get_video_frames_generator
 from supervision.tools.detections import Detections, BoxAnnotator
-from download_models import learn_car_body, learn_car_brand, learn_car_color, model, learn_truck_brand
+from download_models import (
+    learn_car_body,
+    learn_car_brand,
+    learn_car_color,
+    model,
+    learn_truck_brand,
+)
 
 
 # dict maping class_id to class_name
@@ -49,8 +55,10 @@ def predict_image(img_path):
     )
 
     # Filter detections for car, truck, bus, and train classes
-    relevant_classes = ['car', 'truck', 'bus', 'train']
-    relevant_class_ids = [k for k, v in CLASS_NAMES_DICT.items() if v.lower() in relevant_classes]
+    relevant_classes = ["car", "truck", "bus", "train"]
+    relevant_class_ids = [
+        k for k, v in CLASS_NAMES_DICT.items() if v.lower() in relevant_classes
+    ]
     relevant_detections = [det for det in detections if det[2] in relevant_class_ids]
 
     # Find the largest detection among the relevant classes
@@ -66,7 +74,9 @@ def predict_image(img_path):
     # Proceed only if a detection is found
     if largest_detection:
         # format custom label for the largest detection
-        labels = [f"{CLASS_NAMES_DICT[largest_detection[2]]} {largest_detection[1]:0.2f}"]
+        labels = [
+            f"{CLASS_NAMES_DICT[largest_detection[2]]} {largest_detection[1]:0.2f}"
+        ]
 
         # annotate and display frame with only the largest detection
         frame = box_annotator.annotate(
@@ -86,8 +96,8 @@ def predict_image(img_path):
 
     img_resized = img.resize((224, 224))
 
-    img_resized_gray = img_resized.convert('L')
-    img_resized_gray = img_resized.convert('L')
+    img_resized_gray = img_resized.convert("L")
+    img_resized_gray = img_resized.convert("L")
 
     img_resized_np_brand = np.array(img_resized_gray)
     img_resized_np = np.array(img_resized)
@@ -96,8 +106,12 @@ def predict_image(img_path):
     pred_class_color, pred_idx_color, probs_color = learn_car_color.predict(
         img_resized_np
     )
-    pred_class_body, pred_idx_body, probs_body = learn_car_body.predict(img_resized_np_brand)
-    pred_class_truck, pred_idx_truck, probs_truck = learn_truck_brand.predict(img_resized_np_brand)
+    pred_class_body, pred_idx_body, probs_body = learn_car_body.predict(
+        img_resized_np_brand
+    )
+    pred_class_truck, pred_idx_truck, probs_truck = learn_truck_brand.predict(
+        img_resized_np_brand
+    )
 
     return (
         pred_class,

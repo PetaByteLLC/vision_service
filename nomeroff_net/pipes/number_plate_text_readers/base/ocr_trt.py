@@ -1,6 +1,7 @@
 """
 python3 -m nomeroff_net.text_detectors.base.ocr_trt -f nomeroff_net/text_detectors/base/ocr_trt.py
 """
+
 from typing import List, Any, Dict
 import pycuda.driver as cuda
 import tensorrt as trt
@@ -44,7 +45,10 @@ class OcrTrt(OCR):
         bindings = []
 
         for binding in self.engine:
-            size = trt.volume(self.engine.get_binding_shape(binding)) * self.engine.max_batch_size
+            size = (
+                trt.volume(self.engine.get_binding_shape(binding))
+                * self.engine.max_batch_size
+            )
             dtype = trt.nptype(self.engine.get_binding_dtype(binding))
             # Allocate host and device buffers
             host_mem = cuda.pagelocked_empty(size, dtype)
@@ -72,7 +76,7 @@ class OcrTrt(OCR):
         self.batch_size = self.engine.max_batch_size
 
         return self.engine
-    
+
     def run_engine(self, batch_input_image):
         threading.Thread.__init__(self)
 
@@ -85,16 +89,17 @@ class OcrTrt(OCR):
         cuda_outputs = self.cuda_outputs
         bindings = self.bindings
 
-
         batch_input_image = np.ascontiguousarray(batch_input_image)
-        
+
         # Copy input image to host buffer
         np.copyto(host_inputs[0], batch_input_image.ravel())
 
         # Transfer input data  to the GPU.
         cuda.memcpy_htod_async(cuda_inputs[0], host_inputs[0], stream)
         # Run inference.
-        context.execute_async(batch_size=self.batch_size, bindings=bindings, stream_handle=stream.handle)
+        context.execute_async(
+            batch_size=self.batch_size, bindings=bindings, stream_handle=stream.handle
+        )
         # Transfer predictions back from the GPU.
         cuda.memcpy_dtoh_async(host_outputs[0], cuda_outputs[0], stream)
         # Synchronize the stream
@@ -115,18 +120,18 @@ class OcrTrt(OCR):
             model_info = modelhub.download_model_by_name(self.get_classname())
             path_to_model = model_info["path"]
         elif path_to_model.startswith("http"):
-            model_info = modelhub.download_model_by_url(path_to_model,
-                                                        self.get_classname(),
-                                                        self.get_classname())
+            model_info = modelhub.download_model_by_url(
+                path_to_model, self.get_classname(), self.get_classname()
+            )
             path_to_model = model_info["path"]
         return self.load_model(path_to_model)
-    
+
     def preprocess(self, imgs):
-        xs = np.zeros((len(imgs), self.color_channels, self.height, self.width)).astype('float32')
+        xs = np.zeros((len(imgs), self.color_channels, self.height, self.width)).astype(
+            "float32"
+        )
         for i, img in enumerate(imgs):
-            x = normalize_img(img,
-                              width=self.width,
-                              height=self.height)
+            x = normalize_img(img, width=self.width, height=self.height)
             x = np.moveaxis(x, 2, 0)
             xs[i, :, :, :] = x
         return xs
@@ -140,9 +145,13 @@ class OcrTrt(OCR):
         if return_acc:
             if len(net_out_value):
                 net_out_value = np.array(net_out_value)
-                net_out_value = net_out_value.reshape((net_out_value.shape[1],
-                                                       net_out_value.shape[0],
-                                                       net_out_value.shape[2]))
+                net_out_value = net_out_value.reshape(
+                    (
+                        net_out_value.shape[1],
+                        net_out_value.shape[0],
+                        net_out_value.shape[2],
+                    )
+                )
             return pred_texts, net_out_value
         return pred_texts
 
@@ -160,24 +169,62 @@ class OcrTrt(OCR):
 
 if __name__ == "__main__":
     det = OcrTrt()
-    det.letters = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "I",
-                        "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
+    det.letters = [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+        "R",
+        "S",
+        "T",
+        "U",
+        "V",
+        "W",
+        "X",
+        "Y",
+        "Z",
+    ]
     det.max_text_len = 9
     det.max_plate_length = 9
-    det.letters_max = len(det.letters)+1
+    det.letters_max = len(det.letters) + 1
     det.init_label_converter()
 
-    det.load(os.path.join(
-        os.getcwd(),
-        "./data/model_repository/ocr-eu/1/model.trt"))
+    det.load(os.path.join(os.getcwd(), "./data/model_repository/ocr-eu/1/model.trt"))
 
-    image_path = os.path.join(os.getcwd(), "./data/examples/numberplate_zone_images/JJF509.png")
+    image_path = os.path.join(
+        os.getcwd(), "./data/examples/numberplate_zone_images/JJF509.png"
+    )
     img = cv2.imread(image_path)
     xs = det.preprocess([img])
     y = det.predict(xs)
     print("y", y)
 
-    image_path = os.path.join(os.getcwd(), "./data/examples/numberplate_zone_images/RP70012.png")
+    image_path = os.path.join(
+        os.getcwd(), "./data/examples/numberplate_zone_images/RP70012.png"
+    )
     img = cv2.imread(image_path)
     xs = det.preprocess([img])
     y = det.predict(xs)

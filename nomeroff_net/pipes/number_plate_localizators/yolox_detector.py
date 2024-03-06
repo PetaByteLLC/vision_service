@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from typing import List, Tuple
 
-from nomeroff_net.tools import (modelhub, get_mode_torch)
+from nomeroff_net.tools import modelhub, get_mode_torch
 
 # download and append to path yolo repo
 modelhub.download_repo_for_model("yoloxv5s")
@@ -14,15 +14,20 @@ from yolox.data.data_augment import ValTransform as DefaultTransform
 
 
 class Detector(object):
-    """
+    """ """
 
-    """
     @classmethod
     def get_classname(cls: object) -> str:
         return cls.__name__
 
-    def __init__(self, exp_class=DefaultExp, half=True, fuse=False,
-                 legacy=False, transform_class=DefaultTransform) -> None:
+    def __init__(
+        self,
+        exp_class=DefaultExp,
+        half=True,
+        fuse=False,
+        legacy=False,
+        transform_class=DefaultTransform,
+    ) -> None:
         self.model = None
         self.fuse = fuse
         self.device = ""
@@ -33,7 +38,7 @@ class Detector(object):
         self.trt_file = None
         self.decoder = None
         self.confthre = self.exp.test_conf
-        self.num_classes = self.exp .num_classes
+        self.num_classes = self.exp.num_classes
         self.nmsthre = self.exp.nmsthre
         self.preproc = transform_class(legacy=legacy)
 
@@ -54,7 +59,9 @@ class Detector(object):
         if self.fuse:
             self.model = fuse_model(self.model)
 
-    def load(self, path_to_model: str = "latest", device: str = get_mode_torch()) -> None:
+    def load(
+        self, path_to_model: str = "latest", device: str = get_mode_torch()
+    ) -> None:
         if path_to_model == "latest":
             model_info = modelhub.download_model_by_name("yoloxv5s")
             path_to_model = model_info["path"]
@@ -84,20 +91,28 @@ class Detector(object):
                 input_tensors = input_tensors.half()  # to FP16
         return input_tensors
 
-    def postprocessing(self,
-                       preds: torch.Tensor,
-                       imgs: List[np.ndarray],
-                       orig_img_shapes: List[Tuple],
-                       min_accuracy: float = 0.5,
-                       **_):
+    def postprocessing(
+        self,
+        preds: torch.Tensor,
+        imgs: List[np.ndarray],
+        orig_img_shapes: List[Tuple],
+        min_accuracy: float = 0.5,
+        **_
+    ):
         res = []
         for pred, img, orig_img_shape in zip(preds, imgs, orig_img_shapes):
             pred = pred.cpu().numpy()
-            ratio = min([img.shape[1]/orig_img_shape[0], img.shape[2]/orig_img_shape[1]])
+            ratio = min(
+                [img.shape[1] / orig_img_shape[0], img.shape[2] / orig_img_shape[1]]
+            )
             if len(pred):
-                res.append([[x1/ratio, y1/ratio, x2/ratio, y2/ratio, acc, b]
-                            for x1, y1, x2, y2, acc, b, *_ in pred
-                            if acc > min_accuracy])
+                res.append(
+                    [
+                        [x1 / ratio, y1 / ratio, x2 / ratio, y2 / ratio, acc, b]
+                        for x1, y1, x2, y2, acc, b, *_ in pred
+                        if acc > min_accuracy
+                    ]
+                )
             else:
                 res.append([])
         return res
@@ -108,8 +123,7 @@ class Detector(object):
         if self.decoder is not None:
             preds = self.decoder(preds, dtype=preds.type())
         preds = postprocess(
-            preds, self.num_classes, self.confthre,
-            self.nmsthre, class_agnostic=True
+            preds, self.num_classes, self.confthre, self.nmsthre, class_agnostic=True
         )
         return preds
 
@@ -127,11 +141,15 @@ class Detector(object):
         input_tensor = input_tensor.unsqueeze(0)
 
         preds = self.forward(input_tensor)
-        return self.postprocessing(preds, input_tensor, orig_img_shapes, min_accuracy)[0]
+        return self.postprocessing(preds, input_tensor, orig_img_shapes, min_accuracy)[
+            0
+        ]
 
     @torch.no_grad()
     def detect(self, imgs: List[np.ndarray], min_accuracy: float = 0.5) -> List:
         orig_img_shapes = [img.shape for img in imgs]
         input_tensors = self.normalize_imgs(imgs)
         preds = self.forward(input_tensors)
-        return self.postprocessing(preds, input_tensors, orig_img_shapes, min_accuracy=min_accuracy)
+        return self.postprocessing(
+            preds, input_tensors, orig_img_shapes, min_accuracy=min_accuracy
+        )

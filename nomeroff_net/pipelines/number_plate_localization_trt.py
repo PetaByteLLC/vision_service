@@ -3,6 +3,7 @@ from typing import Any, Dict, Optional, Union
 from nomeroff_net.image_loaders import BaseImageLoader
 from nomeroff_net.pipelines.base import Pipeline
 from nomeroff_net.tools import unzip
+
 # from nomeroff_net.pipes.number_plate_localizators.yolov5_engine_detector import Detector
 from nomeroff_net.pipes.number_plate_localizators.yolov8_engine_detector import Detector
 
@@ -12,16 +13,20 @@ class NumberPlateLocalizationTrt(Pipeline):
     Number Plate Localization Tensorrt
     """
 
-    def __init__(self,
-                 task,
-                 image_loader: Optional[Union[str, BaseImageLoader]],
-                 engine_file_path: str,
-                 **kwargs):
+    def __init__(
+        self,
+        task,
+        image_loader: Optional[Union[str, BaseImageLoader]],
+        engine_file_path: str,
+        **kwargs
+    ):
         super().__init__(task, image_loader, **kwargs)
         self.detector = Detector()
         self.detector.load_model(engine_file_path)
 
-    def sanitize_parameters(self, img_size=None, stride=None, min_accuracy=None, **kwargs):
+    def sanitize_parameters(
+        self, img_size=None, stride=None, min_accuracy=None, **kwargs
+    ):
         parameters = {}
         postprocess_parameters = {}
         if img_size is not None:

@@ -15,13 +15,15 @@ from nomeroff_net.tools.image_processing import normalize_img
 
 
 class ImgGenerator(Dataset):
-    def __init__(self,
-                 dirpath: str,
-                 img_w: int = 295,
-                 img_h: int = 64,
-                 batch_size: int = 32,
-                 labels_counts: List = (14, 4, 2),
-                 with_aug: bool = False) -> None:
+    def __init__(
+        self,
+        dirpath: str,
+        img_w: int = 295,
+        img_h: int = 64,
+        batch_size: int = 32,
+        labels_counts: List = (14, 4, 2),
+        with_aug: bool = False,
+    ) -> None:
         self.with_aug = with_aug
         self.cur_index = 0
         self.paths = []
@@ -42,12 +44,14 @@ class ImgGenerator(Dataset):
 
         self.n = len(self.samples)
         self.indexes = list(range(self.n))
-        self.batch_count = int(self.n/batch_size)
+        self.batch_count = int(self.n / batch_size)
         self.rezero()
 
-    def load_dataset(self, with_aug: bool, dirpath: str, cache_postfix: str = "cache_options"):
-        img_dirpath = os.path.join(self.dirpath, 'img')
-        ann_dirpath = os.path.join(self.dirpath, 'ann')
+    def load_dataset(
+        self, with_aug: bool, dirpath: str, cache_postfix: str = "cache_options"
+    ):
+        img_dirpath = os.path.join(self.dirpath, "img")
+        ann_dirpath = os.path.join(self.dirpath, "ann")
 
         if with_aug:
             cache_postfix = f"{cache_postfix}_aug"
@@ -57,17 +61,23 @@ class ImgGenerator(Dataset):
         self.images_path = []
         for file_name in tqdm(os.listdir(img_dirpath)):
             name, ext = os.path.splitext(file_name)
-            if ext == '.png':
+            if ext == ".png":
                 img_filepath = os.path.join(img_dirpath, file_name)
                 self.images_path.append(img_filepath)
-                json_filepath = os.path.join(ann_dirpath, name + '.json')
+                json_filepath = os.path.join(ann_dirpath, name + ".json")
                 x_filepath = self.generate_cache_x_in_path(img_filepath, cache_dirpath)
                 if os.path.exists(json_filepath):
-                    description = json.load(open(json_filepath, 'r'))
-                    self.samples.append([x_filepath, [
-                        int(description.get("region_id", -1)),
-                        int(description.get("count_lines", -1)),
-                        int(description.get("orientation", -1))]])
+                    description = json.load(open(json_filepath, "r"))
+                    self.samples.append(
+                        [
+                            x_filepath,
+                            [
+                                int(description.get("region_id", -1)),
+                                int(description.get("count_lines", -1)),
+                                int(description.get("orientation", -1)),
+                            ],
+                        ]
+                    )
 
         self.added_samples_to_round_batch()
         self.n = len(self.samples)
@@ -92,7 +102,9 @@ class ImgGenerator(Dataset):
     def get_x_from_path(x_path: str) -> torch.Tensor:
         return torch.load(x_path)
 
-    def generate_cache_x_in_path(self, img_path: str, cache_dirpath: str, newsize: Tuple = None) -> str:
+    def generate_cache_x_in_path(
+        self, img_path: str, cache_dirpath: str, newsize: Tuple = None
+    ) -> str:
         x_path = self.generate_x_path(img_path, cache_dirpath)
 
         if os.path.exists(x_path):
@@ -100,10 +112,11 @@ class ImgGenerator(Dataset):
 
         if newsize is None:
             newsize = (self.img_w, self.img_h)
-        img = Image.open(img_path).convert('RGB')
+        img = Image.open(img_path).convert("RGB")
         img = img.resize(newsize)
         if self.with_aug:
             from nomeroff_net.tools.augmentations import aug
+
             img = np.array(img)
             imgs = aug([img])
             img = Image.fromarray(imgs[0])
@@ -115,7 +128,7 @@ class ImgGenerator(Dataset):
     def generate_x_path(img_path: str, cache_dirpath: str):
         filename, file_extension = os.path.splitext(img_path)
         filename = os.path.basename(filename)
-        x_path = os.path.join(cache_dirpath, f'{filename}.pt')
+        x_path = os.path.join(cache_dirpath, f"{filename}.pt")
         return x_path
 
     def __getitem__(self, index):
@@ -131,9 +144,11 @@ class ImgGenerator(Dataset):
         return x, y
 
     def prepare_transformers(self):
-        self.list_transforms = transforms.Compose([
-            transforms.ToTensor(),
-        ])
+        self.list_transforms = transforms.Compose(
+            [
+                transforms.ToTensor(),
+            ]
+        )
 
     def transform(self, img) -> torch.Tensor:
         x = self.list_transforms(img)
@@ -151,7 +166,7 @@ class ImgGenerator(Dataset):
             self.discs.append(
                 [
                     np.eye(self.labels_counts[0])[disc[0]],
-                    np.eye(self.labels_counts[1])[disc[1]]
+                    np.eye(self.labels_counts[1])[disc[1]],
                 ]
             )
 
@@ -159,7 +174,10 @@ class ImgGenerator(Dataset):
         self.cur_index += 1
         if self.cur_index >= self.n:
             self.cur_index = 0
-        return self.images_path[self.indexes[self.cur_index]], self.discs[self.indexes[self.cur_index]]
+        return (
+            self.images_path[self.indexes[self.cur_index]],
+            self.discs[self.indexes[self.cur_index]],
+        )
 
     def run_iteration(self, with_aug=False):
         ys = [[], []]
@@ -170,7 +188,9 @@ class ImgGenerator(Dataset):
             paths.append(x)
             img = cv2.imread(x)
             img = img[:, :, ::-1]
-            x = normalize_img(img, with_aug=with_aug, width=self.img_w, height=self.img_h)
+            x = normalize_img(
+                img, with_aug=with_aug, width=self.img_w, height=self.img_h
+            )
             xs.append(x)
             ys[0].append(y[0])
             ys[1].append(y[1])

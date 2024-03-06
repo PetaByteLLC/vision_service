@@ -22,7 +22,7 @@ def fline(p0: List, p1: List, debug: bool = False) -> List:
         b = y2
     else:
         k = (y1 - y2) / (x1 - x2)
-        b = y2 - k*x2
+        b = y2 - k * x2
     if debug:
         print(" y = %.4f*x + %.4f" % (k, b))
     r = math.atan(k)
@@ -37,7 +37,7 @@ def distance(p0: List or np.ndarray, p1: List or np.ndarray) -> float:
     """
     distance between two points p0 and p1
     """
-    return math.sqrt((p0[0] - p1[0])**2 + (p0[1] - p1[1])**2)
+    return math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2)
 
 
 def linear_line_matrix(p0: List, p1: List, verbode: bool = False) -> np.ndarray:
@@ -52,7 +52,7 @@ def linear_line_matrix(p0: List, p1: List, verbode: bool = False) -> np.ndarray:
 
     matrix_a = y1 - y2
     matrix_b = x2 - x1
-    matrix_c = x2*y1-x1*y2
+    matrix_c = x2 * y1 - x1 * y2
     if verbode:
         print("Уравнение прямой, проходящей через эти точки:")
         print("%.4f*x + %.4fy = %.4f" % (matrix_a, matrix_b, matrix_c))
@@ -84,9 +84,15 @@ def find_distances(points: np.ndarray or List) -> List:
             p1 = i + 1
         else:
             p1 = 0
-        distanses.append({"d": distance(points[p0], points[p1]), "p0": p0, "p1": p1,
-                          "matrix": linear_line_matrix(points[p0], points[p1]),
-                          "coef": fline(points[p0], points[p1])})
+        distanses.append(
+            {
+                "d": distance(points[p0], points[p1]),
+                "p0": p0,
+                "p1": p1,
+                "matrix": linear_line_matrix(points[p0], points[p1]),
+                "coef": fline(points[p0], points[p1]),
+            }
+        )
     return distanses
 
 
@@ -121,18 +127,24 @@ def build_perspective(img: np.ndarray, rect: list, w: int, h: int) -> List:
     return cv2.warpPerspective(img, moment, (w, h))
 
 
-def get_cv_zone_rgb(img: np.ndarray, rect: list, gw: float = 0, gh: float = 0,
-                    coef: float = 4.6, auto_width_height: bool = True) -> List:
+def get_cv_zone_rgb(
+    img: np.ndarray,
+    rect: list,
+    gw: float = 0,
+    gh: float = 0,
+    coef: float = 4.6,
+    auto_width_height: bool = True,
+) -> List:
     """
     TODO: describe function
     """
     if gw == 0 or gh == 0:
         distanses = find_distances(rect)
-        h = (distanses[0]['d'] + distanses[2]['d']) / 2
+        h = (distanses[0]["d"] + distanses[2]["d"]) / 2
         if auto_width_height:
-            w = int(h*coef)
+            w = int(h * coef)
         else:
-            w = (distanses[1]['d'] + distanses[3]['d']) / 2
+            w = (distanses[1]["d"] + distanses[3]["d"]) / 2
     else:
         w, h = gw, gh
     return build_perspective(img, rect, int(w), int(h))
@@ -142,14 +154,23 @@ def get_mean_distance(rect: List, start_idx: int, verbose: bool = False) -> np.n
     """
     TODO: describe function
     """
-    end_idx = start_idx+1
-    start2_idx = start_idx+2
-    end2_idx = end_idx+2
+    end_idx = start_idx + 1
+    start2_idx = start_idx + 2
+    end2_idx = end_idx + 2
     if end2_idx == 4:
         end2_idx = 0
     if verbose:
-        print('startIdx: {}, endIdx: {}, start2Idx: {}, end2Idx: {}'.format(start_idx, end_idx, start2_idx, end2_idx))
-    return np.mean([distance(rect[start_idx], rect[end_idx]), distance(rect[start2_idx], rect[end2_idx])])
+        print(
+            "startIdx: {}, endIdx: {}, start2Idx: {}, end2Idx: {}".format(
+                start_idx, end_idx, start2_idx, end2_idx
+            )
+        )
+    return np.mean(
+        [
+            distance(rect[start_idx], rect[end_idx]),
+            distance(rect[start2_idx], rect[end2_idx]),
+        ]
+    )
 
 
 def reshape_points(target_points: List or np.ndarray, start_idx: int) -> List:
@@ -163,8 +184,14 @@ def reshape_points(target_points: List or np.ndarray, start_idx: int) -> List:
     return target_points
 
 
-def get_cv_zones_rgb(img: np.ndarray, rects: list, gw: float = 0, gh: float = 0,
-                     coef: float = 4.6, auto_width_height: bool = True) -> List:
+def get_cv_zones_rgb(
+    img: np.ndarray,
+    rects: list,
+    gw: float = 0,
+    gh: float = 0,
+    coef: float = 4.6,
+    auto_width_height: bool = True,
+) -> List:
     """
     TODO: describe function
     """
@@ -177,7 +204,7 @@ def get_cv_zones_rgb(img: np.ndarray, rects: list, gw: float = 0, gh: float = 0,
         else:
             rect = reshape_points(rect, 3)
         if gw == 0 or gh == 0:
-            w, h = int(h*coef), int(h)
+            w, h = int(h * coef), int(h)
         else:
             w, h = gw, gh
         dst = build_perspective(img, rect, int(w), int(h))
@@ -196,12 +223,20 @@ def convert_cv_zones_rgb_to_bgr(dsts: List) -> List:
     return bgr_dsts
 
 
-def get_cv_zones_bgr(img: np.ndarray, rects: list, gw: float = 0, gh: float = 0,
-                     coef: float = 4.6, auto_width_height: bool = True) -> List:
+def get_cv_zones_bgr(
+    img: np.ndarray,
+    rects: list,
+    gw: float = 0,
+    gh: float = 0,
+    coef: float = 4.6,
+    auto_width_height: bool = True,
+) -> List:
     """
     TODO: describe function
     """
-    dsts = get_cv_zones_rgb(img, rects, gw, gh, coef, auto_width_height=auto_width_height)
+    dsts = get_cv_zones_rgb(
+        img, rects, gw, gh, coef, auto_width_height=auto_width_height
+    )
     return convert_cv_zones_rgb_to_bgr(dsts)
 
 
@@ -211,8 +246,9 @@ def normalize(img: np.ndarray) -> np.ndarray:
 
 
 def normalize_color(img: np.ndarray) -> np.ndarray:
-    img = cv2.normalize(img, None, alpha=0, beta=255,
-                        norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+    img = cv2.normalize(
+        img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
+    )
     return img
 
 
@@ -234,7 +270,9 @@ def order_points_old(pts: np.ndarray):
         rp = rp - 4
     rect[0] = pts[lp]
     rect[2] = pts[rp]
-    pts_crop = [pts[idx] for idx in filter(lambda i: (i != lp) and (i != rp), range(len(pts)))]
+    pts_crop = [
+        pts[idx] for idx in filter(lambda i: (i != lp) and (i != rp), range(len(pts)))
+    ]
 
     # now, compute the difference between the points, the
     # top-right point will have the smallest difference,
@@ -279,7 +317,7 @@ def minimum_bounding_rectangle(points: np.ndarray) -> np.ndarray:
     :param points: an nx2 matrix of coordinates
     :rval: an nx2 matrix of coordinates
     """
-    pi2 = np.pi / 2.
+    pi2 = np.pi / 2.0
 
     # get the convex hull for the points
     hull_points = points[ConvexHull(points).vertices]
@@ -293,11 +331,9 @@ def minimum_bounding_rectangle(points: np.ndarray) -> np.ndarray:
 
     # find rotation matrices
     # XXX both work
-    rotations = np.vstack([
-        np.cos(angles),
-        np.cos(angles - pi2),
-        np.cos(angles + pi2),
-        np.cos(angles)]).T
+    rotations = np.vstack(
+        [np.cos(angles), np.cos(angles - pi2), np.cos(angles + pi2), np.cos(angles)]
+    ).T
     rotations = rotations.reshape((-1, 2, 2))
 
     # apply rotations to the hull
@@ -347,7 +383,10 @@ def find_min_x_idx(target_points: Union) -> int:
     for i in range(0, len(target_points)):
         if target_points[i][0] < target_points[min_x_idx][0]:
             min_x_idx = i
-        if target_points[i][0] == target_points[min_x_idx][0] and target_points[i][1] < target_points[min_x_idx][1]:
+        if (
+            target_points[i][0] == target_points[min_x_idx][0]
+            and target_points[i][1] < target_points[min_x_idx][1]
+        ):
             min_x_idx = i
     return min_x_idx
 
@@ -479,7 +518,9 @@ def rotate_box(corners, angle, cx, cy, h, w):
     """
 
     corners = corners.reshape(-1, 2)
-    corners = np.hstack((corners, np.ones((corners.shape[0], 1), dtype=type(corners[0][0]))))
+    corners = np.hstack(
+        (corners, np.ones((corners.shape[0], 1), dtype=type(corners[0][0])))
+    )
 
     moment, nw, nh = grab_rotation_matrix(cx, cy, h, w, angle)
 
@@ -550,13 +591,16 @@ def generate_image_rotation_variants(img, target_boxes, angles=None):
     return variant_images, variants_bboxes
 
 
-def normalize_img(img: np.ndarray,
-                  height: int = 64,
-                  width: int = 295,
-                  to_gray: bool = False,
-                  with_aug: bool = False) -> np.ndarray:
+def normalize_img(
+    img: np.ndarray,
+    height: int = 64,
+    width: int = 295,
+    to_gray: bool = False,
+    with_aug: bool = False,
+) -> np.ndarray:
     if with_aug:
         from nomeroff_net.tools.augmentations import aug
+
         imgs = aug([img])
         img = imgs[0]
     if to_gray and img.shape[-1] == 3:
@@ -564,7 +608,9 @@ def normalize_img(img: np.ndarray,
     if not to_gray and len(img.shape) == 2:
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
     img = cv2.resize(img, (width, height))
-    img = cv2.normalize(img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
+    img = cv2.normalize(
+        img, None, alpha=0, beta=1, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F
+    )
 
     if to_gray:
         img = np.reshape(img, [*img.shape, 1])
@@ -577,7 +623,7 @@ def crop_image(image, target_box):
     y = int(min(target_box[1], target_box[3]))
     h = int(abs(target_box[3] - target_box[1]))
 
-    image_part = image[y:y + h, x:x + w]
+    image_part = image[y : y + h, x : x + w]
     return image_part, (x, w, y, h)
 
 
@@ -585,7 +631,9 @@ def crop_number_plate_zones_from_images(images, images_points):
     zones = []
     image_ids = []
     for i, (image, image_points) in enumerate(zip(images, images_points)):
-        image_zones = [get_cv_zone_rgb(image, reshape_points(rect, 1)) for rect in image_points]
+        image_zones = [
+            get_cv_zone_rgb(image, reshape_points(rect, 1)) for rect in image_points
+        ]
         for zone in image_zones:
             zones.append(zone)
             image_ids.append(i)
@@ -601,16 +649,16 @@ def crop_number_plate_rect_zones_from_images(images, images_bboxs):
                 int(min(target_box[0], target_box[2])),
                 int(abs(target_box[2] - target_box[0])),
                 int(min(target_box[1], target_box[3])),
-                int(abs(target_box[3] - target_box[1]))
+                int(abs(target_box[3] - target_box[1])),
             )
-            image_part = img[y:y + h, x:x + w]
+            image_part = img[y : y + h, x : x + w]
             zones.append(image_part)
             image_ids.append(i)
     return zones, image_ids
 
 
 def group_by_image_ids(image_ids, props):
-    images_props = [[[] for _ in range(max(image_ids or [0])+1)] for _ in props]
+    images_props = [[[] for _ in range(max(image_ids or [0]) + 1)] for _ in props]
     for i, prop in enumerate(props):
         for image_id, val in zip(image_ids, prop):
             images_props[i][image_id].append(val)

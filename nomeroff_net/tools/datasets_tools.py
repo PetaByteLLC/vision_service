@@ -13,7 +13,9 @@ from collections import Counter
 from nomeroff_net.tools import modelhub
 from nomeroff_net import pipeline
 from nomeroff_net.pipes.number_plate_text_readers.text_detector import TextDetector
-from nomeroff_net.pipes.number_plate_classificators.options_detector import OptionsDetector
+from nomeroff_net.pipes.number_plate_classificators.options_detector import (
+    OptionsDetector,
+)
 
 
 def option_checker(dataset_dir, img_format="png", part_size=1):
@@ -55,24 +57,35 @@ def option_checker(dataset_dir, img_format="png", part_size=1):
             if i >= part_size:
                 # find standart
                 region_ids, count_lines = options_detector.predict(zones)
-                for (regionId, zone, nottedRegion, nottedState, imgFname,
-                     annFname, annItem, nottedCountL, countL) in zip(region_ids,
-                                                                     zones,
-                                                                     notted_regions,
-                                                                     notted_states,
-                                                                     img_fnames,
-                                                                     ann_fnames,
-                                                                     ann_data,
-                                                                     count_lines,
-                                                                     nottedcount_lines):
+                for (
+                    regionId,
+                    zone,
+                    nottedRegion,
+                    nottedState,
+                    imgFname,
+                    annFname,
+                    annItem,
+                    nottedCountL,
+                    countL,
+                ) in zip(
+                    region_ids,
+                    zones,
+                    notted_regions,
+                    notted_states,
+                    img_fnames,
+                    ann_fnames,
+                    ann_data,
+                    count_lines,
+                    nottedcount_lines,
+                ):
 
                     # region
                     bad_region = False
                     if int(regionId) != int(nottedRegion):
                         bad_region = True
-                        if not ('moderation' in annItem):
-                            annItem['moderation'] = {}
-                        annItem['moderation']['regionPredicted'] = int(regionId)
+                        if not ("moderation" in annItem):
+                            annItem["moderation"] = {}
+                        annItem["moderation"]["regionPredicted"] = int(regionId)
                         print("REGION NOT CORRECT IN {}".format(imgFname))
                         print("PREDICTED: {}".format(regionId))
                         print("ANNOTATED: {}".format(nottedRegion))
@@ -84,9 +97,9 @@ def option_checker(dataset_dir, img_format="png", part_size=1):
                     bad_count = False
                     if int(countL) != int(nottedCountL):
                         bad_count = True
-                        if not ('moderation' in annItem):
-                            annItem['moderation'] = {}
-                        annItem['moderation']['countPredicted'] = int(countL)
+                        if not ("moderation" in annItem):
+                            annItem["moderation"] = {}
+                        annItem["moderation"]["countPredicted"] = int(countL)
                         print("COUNT LINES NOT CORRECT IN {}".format(imgFname))
                         print("PREDICTED: {}".format(countL))
                         print("ANNOTATED: {}".format(nottedCountL))
@@ -94,9 +107,9 @@ def option_checker(dataset_dir, img_format="png", part_size=1):
                     else:
                         counter["GOOD_COUNT"] += 1
 
-                    if 'moderation' in annItem and (bad_region or bad_count):
+                    if "moderation" in annItem and (bad_region or bad_count):
                         with open(annFname, "w") as jsonW:
-                            annItem['moderation']['isModerated'] = 0
+                            annItem["moderation"]["isModerated"] = 0
                             json.dump(annItem, jsonW)
 
                 img_fnames = []
@@ -109,27 +122,35 @@ def option_checker(dataset_dir, img_format="png", part_size=1):
     return counter
 
 
-def add_np(fname, zone, region_id, count_line, desc, predicted_text,
-           img_dir, ann_dir, replace_template=None):
+def add_np(
+    fname,
+    zone,
+    region_id,
+    count_line,
+    desc,
+    predicted_text,
+    img_dir,
+    ann_dir,
+    replace_template=None,
+):
     if replace_template is None:
         replace_template = {}
     height, width, c = zone.shape
     mpimg.imsave(os.path.join(img_dir, "{}.png".format(fname)), zone)
     data = {
-      "description": desc,
-      "name": fname,
-      "region_id": region_id,
-      "count_lines": count_line,
-      "size": {
-        "width": width,
-        "height": height
-      },
+        "description": desc,
+        "name": fname,
+        "region_id": region_id,
+        "count_lines": count_line,
+        "size": {"width": width, "height": height},
     }
     data.update(replace_template)
     if "moderation" not in data:
         data["moderation"] = {}
     data["moderation"]["predicted"] = predicted_text
-    with open(os.path.join(ann_dir, "{}.json".format(fname)), "w", encoding='utf8') as jsonWF:
+    with open(
+        os.path.join(ann_dir, "{}.json".format(fname)), "w", encoding="utf8"
+    ) as jsonWF:
         json.dump(data, jsonWF, ensure_ascii=False)
 
 
@@ -137,62 +158,104 @@ def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""
     chunked = []
     for i in range(0, len(lst), n):
-        chunked.append(lst[i:i + n])
+        chunked.append(lst[i : i + n])
     return chunked
 
 
-def auto_number_grab(root_dir, res_dir, replace_template=None, csv_dataset_path=None, image_loader="opencv",
-                     chunk_size=10, **kwargs):
+def auto_number_grab(
+    root_dir,
+    res_dir,
+    replace_template=None,
+    csv_dataset_path=None,
+    image_loader="opencv",
+    chunk_size=10,
+    **kwargs,
+):
     if replace_template is None:
-        replace_template = {'moderation': {'isModerated': 0, 'moderatedBy': 'Default User'}, 'state_id': 2}
+        replace_template = {
+            "moderation": {"isModerated": 0, "moderatedBy": "Default User"},
+            "state_id": 2,
+        }
 
     res_ann_dir = os.path.join(res_dir, "ann")
     res_img_dir = os.path.join(res_dir, "img")
 
-    number_plate_detection_and_reading = pipeline("number_plate_detection_and_reading", image_loader=image_loader,
-                                                  **kwargs)
+    number_plate_detection_and_reading = pipeline(
+        "number_plate_detection_and_reading", image_loader=image_loader, **kwargs
+    )
 
-    photos = pd.DataFrame(columns=['photoId'])
+    photos = pd.DataFrame(columns=["photoId"])
     if csv_dataset_path is not None:
         photos = pd.read_csv(csv_dataset_path)
-        photos = photos.set_index(['photoId'])
+        photos = photos.set_index(["photoId"])
 
     if os.path.exists(res_dir):
         shutil.rmtree(res_dir)
     os.makedirs(res_ann_dir, exist_ok=False)
     os.makedirs(res_img_dir, exist_ok=False)
 
-    images_paths = [img_path for img_path in glob.glob(os.path.join(root_dir, "*"))
-                    if imghdr.what(img_path)]
+    images_paths = [
+        img_path
+        for img_path in glob.glob(os.path.join(root_dir, "*"))
+        if imghdr.what(img_path)
+    ]
     images_paths_chunked = chunks(images_paths, chunk_size)
     for images_paths in tqdm.tqdm(images_paths_chunked):
         result = number_plate_detection_and_reading(images_paths, **kwargs)
 
-        for i, (image, image_bboxs,
-                image_points, image_zones, region_ids,
-                region_names, count_lines,
-                confidences, texts) in enumerate(result):
+        for i, (
+            image,
+            image_bboxs,
+            image_points,
+            image_zones,
+            region_ids,
+            region_names,
+            count_lines,
+            confidences,
+            texts,
+        ) in enumerate(result):
 
-            for j, (image_zone, region_id,
-                    region_name, count_line,
-                    confidence, text) in enumerate(zip(image_zones, region_ids, region_names,
-                                                       count_lines, confidences, texts)):
+            for j, (
+                image_zone,
+                region_id,
+                region_name,
+                count_line,
+                confidence,
+                text,
+            ) in enumerate(
+                zip(
+                    image_zones,
+                    region_ids,
+                    region_names,
+                    count_lines,
+                    confidences,
+                    texts,
+                )
+            ):
                 image_path = images_paths[i]
                 base_name = os.path.splitext(os.path.basename(image_path))[0]
                 if csv_dataset_path is not None:
-                    desc = photos.loc[base_name]['npText']
+                    desc = photos.loc[base_name]["npText"]
                 else:
                     desc = text
                 predicted_text = text
                 fname = f"{base_name}_{j}"
-                add_np(fname, image_zone, region_id, count_line, desc, predicted_text,
-                       res_img_dir, res_ann_dir, replace_template)
+                add_np(
+                    fname,
+                    image_zone,
+                    region_id,
+                    count_line,
+                    desc,
+                    predicted_text,
+                    res_img_dir,
+                    res_ann_dir,
+                    replace_template,
+                )
 
 
 def delete_not_used_images_from_via_dataset(
-        path_to_images,
-        path_to_json,
-        delete_not_used_images=True):
+    path_to_images, path_to_json, delete_not_used_images=True
+):
     with open(path_to_json) as ann:
         ann_data = json.load(ann)
     image_list = ann_data
@@ -200,7 +263,7 @@ def delete_not_used_images_from_via_dataset(
     file_names = []
     for _id in tqdm.tqdm(image_list["_via_img_metadata"]):
         image_id = image_list["_via_img_metadata"][_id]["filename"]
-        file_name = f'{path_to_images}/{image_id}'
+        file_name = f"{path_to_images}/{image_id}"
 
         if not os.path.exists(file_name):
             print("[PROBLEM] Path", file_name, "not exists")
@@ -218,20 +281,21 @@ def delete_not_used_images_from_via_dataset(
     return 0
 
 
-def check_ocr_model(root_dir,
-                    model_path="latest",
-                    text_detector_name="eu",
-                    img_format="png",
-                    predicted_part_size=1000,
-                    replace_tamplate=None):
+def check_ocr_model(
+    root_dir,
+    model_path="latest",
+    text_detector_name="eu",
+    img_format="png",
+    predicted_part_size=1000,
+    replace_tamplate=None,
+):
     if replace_tamplate is None:
-        replace_tamplate = {'moderation': {'isModerated': 1, 'moderatedBy': 'ApelSYN'}}
-    text_detector = TextDetector({
-        text_detector_name: {
-            "for_regions": [""],
-            "model_path": model_path
-        },
-    })
+        replace_tamplate = {"moderation": {"isModerated": 1, "moderatedBy": "ApelSYN"}}
+    text_detector = TextDetector(
+        {
+            text_detector_name: {"for_regions": [""], "model_path": model_path},
+        }
+    )
 
     ann_dir = os.path.join(root_dir, "ann")
     jsons = []
@@ -256,9 +320,11 @@ def check_ocr_model(root_dir,
     predicted = []
     N = int(len(imgs) / predicted_part_size) + 1
     for i in range(N):
-        part = i*predicted_part_size
-        part_imgs = imgs[part:part+predicted_part_size]
-        model_inputs = text_detector.preprocess(part_imgs, ["" for _ in part_imgs], [1 for _ in part_imgs])
+        part = i * predicted_part_size
+        part_imgs = imgs[part : part + predicted_part_size]
+        model_inputs = text_detector.preprocess(
+            part_imgs, ["" for _ in part_imgs], [1 for _ in part_imgs]
+        )
         model_outputs = text_detector.forward(model_inputs)
         predicted_part = text_detector.postprocess(model_outputs)
         predicted += predicted_part
@@ -275,15 +341,20 @@ def check_ocr_model(root_dir,
             jsonData.update(replace_tamplate)
             jsonData["moderation"]["isModerated"] = 1
         else:
-            print("Predicted '{}', real: '{}' in file {}".format(jsonData["moderation"]["predicted"],
-                                                                 jsonData["description"], json_path))
-            err_cnt = err_cnt+1
+            print(
+                "Predicted '{}', real: '{}' in file {}".format(
+                    jsonData["moderation"]["predicted"],
+                    jsonData["description"],
+                    json_path,
+                )
+            )
+            err_cnt = err_cnt + 1
 
         with open(json_path, "w") as jsonWF:
             json.dump(jsonData, jsonWF)
 
     print("Error detection count: {}".format(err_cnt))
-    print("Accuracy: {}".format(1-err_cnt/len(predicted)))
+    print("Accuracy: {}".format(1 - err_cnt / len(predicted)))
 
 
 def get_datasets(names=None, states=None):
@@ -301,11 +372,7 @@ def get_datasets(names=None, states=None):
             "Am",
         ]
     if states is None:
-        states = [
-            "train",
-            "test",
-            "val"
-        ]
+        states = ["train", "test", "val"]
 
     datasets = {}
     for name in names:
@@ -332,7 +399,7 @@ def read_annotations(root_dir, processes=10):
     with multiprocessing.Pool(processes=processes) as pool:
         results = pool.map(read_json, jsons_paths)
     jsons = {}
-    for (fname, json_data) in results:
+    for fname, json_data in results:
         jsons[fname] = json_data
     return jsons
 
@@ -363,8 +430,12 @@ def split_datset_by_numberplate_format(annotations, res_dir, inp_dir, subset="te
         numberplate = json_data["description"]
         numberplate_format = find_numberpate_format(numberplate)
 
-        res_path_ann = os.path.join(res_dir, f"{subset}_by_np_format", numberplate_format, "ann")
-        res_path_img = os.path.join(res_dir, f"{subset}_by_np_format", str(numberplate_format), "img")
+        res_path_ann = os.path.join(
+            res_dir, f"{subset}_by_np_format", numberplate_format, "ann"
+        )
+        res_path_img = os.path.join(
+            res_dir, f"{subset}_by_np_format", str(numberplate_format), "img"
+        )
         os.makedirs(res_path_ann, exist_ok=True)
         if not os.path.exists(res_path_img):
             os.symlink(os.path.join(inp_dir, "img"), res_path_img)
@@ -387,6 +458,7 @@ def print_datset_format(annotations, ann_format):
             img = cv2.imread(img_path)
             try:
                 from matplotlib import pyplot as plt
+
                 plt.imshow(img)
                 plt.plot()
             except ModuleNotFoundError as _:

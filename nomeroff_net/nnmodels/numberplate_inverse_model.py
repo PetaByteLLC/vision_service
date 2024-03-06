@@ -2,6 +2,7 @@
 Numberplate Inverse Model
 TEST: python3 -m nomeroff_net.nnmodels.numberplate_inverse_model -f nomeroff_net/nnmodels/numberplate_inverse_model.py
 """
+
 import torch
 import torch.nn as nn
 from torch.nn import functional
@@ -21,27 +22,22 @@ class NPInverseNet(ClassificationNet):
         y = net(xs)
         print(y)
     """
-    def __init__(self,
-                 orientation_output_size: int,
-                 img_h: int = 64,
-                 img_w: int = 295,
-                 batch_size: int = 1,
-                 learning_rate: float = 0.005):
+
+    def __init__(
+        self,
+        orientation_output_size: int,
+        img_h: int = 64,
+        img_w: int = 295,
+        batch_size: int = 1,
+        learning_rate: float = 0.005,
+    ):
         super(NPInverseNet, self).__init__()
         self.batch_size = batch_size
         self.learning_rate = learning_rate
-        self.inp_conv = nn.Conv2d(3, 32, (3, 3),
-                                  stride=(1, 1),
-                                  padding=(0, 0))
-        self.conv1 = nn.Conv2d(32, 64, (3, 3),
-                               stride=(1, 1),
-                               padding=(0, 0))
-        self.conv2 = nn.Conv2d(64, 128, (3, 3),
-                               stride=(1, 1),
-                               padding=(0, 0))
-        self.conv3 = nn.Conv2d(128, 128, (3, 3),
-                               stride=(1, 1),
-                               padding=(0, 0))
+        self.inp_conv = nn.Conv2d(3, 32, (3, 3), stride=(1, 1), padding=(0, 0))
+        self.conv1 = nn.Conv2d(32, 64, (3, 3), stride=(1, 1), padding=(0, 0))
+        self.conv2 = nn.Conv2d(64, 128, (3, 3), stride=(1, 1), padding=(0, 0))
+        self.conv3 = nn.Conv2d(128, 128, (3, 3), stride=(1, 1), padding=(0, 0))
         self.pool = nn.MaxPool2d(2, 2)
 
         img_w = int(img_w / 2 / 2 / 2 / 2 - 2)
@@ -74,7 +70,9 @@ class NPInverseNet(ClassificationNet):
         output = self.forward(x)
 
         loss = functional.cross_entropy(output, torch.max(label, 1)[1])
-        acc = (torch.max(output, 1)[1] == torch.max(label, 1)[1]).float().sum() / self.batch_size
+        acc = (
+            torch.max(output, 1)[1] == torch.max(label, 1)[1]
+        ).float().sum() / self.batch_size
 
         return loss, acc
 

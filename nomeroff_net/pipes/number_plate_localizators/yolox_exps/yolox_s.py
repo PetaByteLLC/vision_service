@@ -13,7 +13,7 @@ class Exp(MyExp):
 
         # Define yourself dataset path
         # self.output_dir = "./YOLOX_outputs"
-        self.data_dir = '/mnt/raid/var/www/nomeroff-net/nomeroff_net/tools/../../data/./dataset/Detector/yolox/autoriaNumberplateDataset-2021-12-12'
+        self.data_dir = "/mnt/raid/var/www/nomeroff-net/nomeroff_net/tools/../../data/./dataset/Detector/yolox/autoriaNumberplateDataset-2021-12-12"
         self.train_ann = "yolox_train.json"
         self.val_ann = "yolox_val.json"
 
@@ -24,7 +24,7 @@ class Exp(MyExp):
         self.eval_interval = 1
 
     def get_data_loader(
-            self, batch_size, is_distributed, no_aug=False, cache_img=False
+        self, batch_size, is_distributed, no_aug=False, cache_img=False
     ):
         from yolox.data import (
             COCODataset,
@@ -50,9 +50,8 @@ class Exp(MyExp):
                 img_size=self.input_size,
                 name="train",
                 preproc=TrainTransform(
-                    max_labels=50,
-                    flip_prob=self.flip_prob,
-                    hsv_prob=self.hsv_prob),
+                    max_labels=50, flip_prob=self.flip_prob, hsv_prob=self.hsv_prob
+                ),
                 cache=cache_img,
             )
         dataset = MosaicDetection(
@@ -60,9 +59,8 @@ class Exp(MyExp):
             mosaic=not no_aug,
             img_size=self.input_size,
             preproc=TrainTransform(
-                max_labels=120,
-                flip_prob=self.flip_prob,
-                hsv_prob=self.hsv_prob),
+                max_labels=120, flip_prob=self.flip_prob, hsv_prob=self.hsv_prob
+            ),
             degrees=self.degrees,
             translate=self.translate,
             mosaic_scale=self.mosaic_scale,

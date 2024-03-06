@@ -14,38 +14,42 @@ The module contains the following functions:
 - `check_task(task)` - Returns task options if task supported? else raise KeyError.
 - `pipeline(task, image_loader, pipeline_kwargs, **kwargs)` - Returns Pipeline task object.
 """
+
 from typing import Any, Dict, Optional, Union
 
-from nomeroff_net.pipelines.base \
-    import Pipeline
-from nomeroff_net.image_loaders \
-    import BaseImageLoader
-from nomeroff_net.pipelines.number_plate_localization \
-    import NumberPlateLocalization
-from nomeroff_net.pipelines.number_plate_bbox_filling \
-    import NumberPlateBboxFilling
-from nomeroff_net.pipelines.number_plate_key_points_detection \
-    import NumberPlateKeyPointsDetection
-from nomeroff_net.pipelines.number_plate_key_points_filling \
-    import NumberPlateKeyPointsFilling
-from nomeroff_net.pipelines.number_plate_classification \
-    import NumberPlateClassification
-from nomeroff_net.pipelines.number_plate_text_reading \
-    import NumberPlateTextReading
-from nomeroff_net.pipelines.number_plate_detection_and_reading \
-    import NumberPlateDetectionAndReading
-from nomeroff_net.pipelines.number_plate_detection_and_reading_v2 \
-    import NumberPlateDetectionAndReadingV2
-from nomeroff_net.pipelines.number_plate_detection_and_reading_runtime \
-    import NumberPlateDetectionAndReadingRuntime
-from nomeroff_net.pipelines.number_plate_detection_and_reading_runtime_v2 \
-    import NumberPlateDetectionAndReadingRuntimeV2
-from nomeroff_net.pipelines.number_plate_short_detection_and_reading \
-    import NumberPlateShortDetectionAndReading
-from nomeroff_net.pipelines.multiline_number_plate_detection_and_reading \
-    import MultilineNumberPlateDetectionAndReading
-from nomeroff_net.pipelines.multiline_number_plate_detection_and_reading_runtime \
-    import MultilineNumberPlateDetectionAndReadingRuntime
+from nomeroff_net.pipelines.base import Pipeline
+from nomeroff_net.image_loaders import BaseImageLoader
+from nomeroff_net.pipelines.number_plate_localization import NumberPlateLocalization
+from nomeroff_net.pipelines.number_plate_bbox_filling import NumberPlateBboxFilling
+from nomeroff_net.pipelines.number_plate_key_points_detection import (
+    NumberPlateKeyPointsDetection,
+)
+from nomeroff_net.pipelines.number_plate_key_points_filling import (
+    NumberPlateKeyPointsFilling,
+)
+from nomeroff_net.pipelines.number_plate_classification import NumberPlateClassification
+from nomeroff_net.pipelines.number_plate_text_reading import NumberPlateTextReading
+from nomeroff_net.pipelines.number_plate_detection_and_reading import (
+    NumberPlateDetectionAndReading,
+)
+from nomeroff_net.pipelines.number_plate_detection_and_reading_v2 import (
+    NumberPlateDetectionAndReadingV2,
+)
+from nomeroff_net.pipelines.number_plate_detection_and_reading_runtime import (
+    NumberPlateDetectionAndReadingRuntime,
+)
+from nomeroff_net.pipelines.number_plate_detection_and_reading_runtime_v2 import (
+    NumberPlateDetectionAndReadingRuntimeV2,
+)
+from nomeroff_net.pipelines.number_plate_short_detection_and_reading import (
+    NumberPlateShortDetectionAndReading,
+)
+from nomeroff_net.pipelines.multiline_number_plate_detection_and_reading import (
+    MultilineNumberPlateDetectionAndReading,
+)
+from nomeroff_net.pipelines.multiline_number_plate_detection_and_reading_runtime import (
+    MultilineNumberPlateDetectionAndReadingRuntime,
+)
 
 
 SUPPORTED_TASKS = {
@@ -61,30 +65,16 @@ SUPPORTED_TASKS = {
     "number_plate_localization": {
         "impl": NumberPlateLocalization,
     },
-    "number_plate_bbox_filling": {
-        "impl": NumberPlateBboxFilling
-    },
-    "number_plate_key_points_detection": {
-        "impl": NumberPlateKeyPointsDetection
-    },
-    "number_plate_key_points_filling": {
-        "impl": NumberPlateKeyPointsFilling
-    },
-    "number_plate_classification": {
-        "impl": NumberPlateClassification
-    },
-    "number_plate_text_reading": {
-        "impl": NumberPlateTextReading
-    },
-    "number_plate_detection_and_reading_v2": {
-        "impl": NumberPlateDetectionAndReadingV2
-    },
+    "number_plate_bbox_filling": {"impl": NumberPlateBboxFilling},
+    "number_plate_key_points_detection": {"impl": NumberPlateKeyPointsDetection},
+    "number_plate_key_points_filling": {"impl": NumberPlateKeyPointsFilling},
+    "number_plate_classification": {"impl": NumberPlateClassification},
+    "number_plate_text_reading": {"impl": NumberPlateTextReading},
+    "number_plate_detection_and_reading_v2": {"impl": NumberPlateDetectionAndReadingV2},
     "number_plate_detection_and_reading_runtime_v2": {
         "impl": NumberPlateDetectionAndReadingRuntimeV2
     },
-    "number_plate_detection_and_reading": {
-        "impl": NumberPlateDetectionAndReading
-    },
+    "number_plate_detection_and_reading": {"impl": NumberPlateDetectionAndReading},
     "number_plate_detection_and_reading_runtime": {
         "impl": NumberPlateDetectionAndReadingRuntime
     },

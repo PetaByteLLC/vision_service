@@ -1,6 +1,7 @@
 """
     python3 nomeroff_net/tools/test_tools.py
 """
+
 import os
 from termcolor import colored
 from collections import Counter
@@ -18,8 +19,7 @@ def get_all_files(folder):
 
 
 def path_filter(p):
-    if p.split(".")[-1] in ("py", "ipynb")\
-            and not os.path.basename(p).startswith("_"):
+    if p.split(".")[-1] in ("py", "ipynb") and not os.path.basename(p).startswith("_"):
         return True
 
 
@@ -34,7 +34,7 @@ def check_test_coverage(test_script_file, dirs_for_test, test_dir="./"):
     for dir_for_test in dirs_for_test:
         all_files.extend(get_all_files(dir_for_test))
 
-    with open(test_script_file, 'r') as stream:
+    with open(test_script_file, "r") as stream:
         tests = stream.readlines()
     tests = filter(test_filter, tests)
     tests = [os.path.join(test_dir, test.split(" ")[-1]) for test in tests]
@@ -46,23 +46,25 @@ def check_test_coverage(test_script_file, dirs_for_test, test_dir="./"):
         path = os.path.normpath(path)
         c["all"] += 1
         if path in tests:
-            print(colored(f'{i}. {path}', "green"))
+            print(colored(f"{i}. {path}", "green"))
             c["good"] += 1
         else:
-            print(colored(f'{i}. {path}', "red"))
+            print(colored(f"{i}. {path}", "red"))
             c["bad"] += 1
-    c["percentage"] = c["good"]/c["all"]
+    c["percentage"] = c["good"] / c["all"]
     return c
 
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.abspath(__file__))
 
-    test_file = os.path.join(current_dir, "../../.github/workflows/nn-ci-cpu-testing.yml")
+    test_file = os.path.join(
+        current_dir, "../../.github/workflows/nn-ci-cpu-testing.yml"
+    )
 
     dirs = [
         os.path.join(current_dir, "../../nomeroff_net"),
-        os.path.join(current_dir, "../../examples")
+        os.path.join(current_dir, "../../examples"),
     ]
 
     stat = check_test_coverage(test_file, dirs, os.path.join(current_dir, "../../"))

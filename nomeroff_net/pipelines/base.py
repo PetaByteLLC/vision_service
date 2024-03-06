@@ -8,6 +8,7 @@ The module contains the following functions:
 The module contains the following classes:
 
 """
+
 import os
 import time
 import ujson
@@ -20,7 +21,11 @@ from typing import Any, Dict, Optional, Union
 from collections import Counter
 from nomeroff_net.tools import promise_all
 from nomeroff_net.tools import chunked_iterable
-from nomeroff_net.image_loaders import BaseImageLoader, DumpyImageLoader, image_loaders_map
+from nomeroff_net.image_loaders import (
+    BaseImageLoader,
+    DumpyImageLoader,
+    image_loaders_map,
+)
 
 
 def may_by_empty_method(func):
@@ -43,45 +48,70 @@ class AccuracyTestPipeline(object):
     """
     Accuracy Test Pipeline Base Class
     """
+
     @staticmethod
-    def text_accuracy_test(true_images_texts, predicted_images_texts,
-                           img_paths, images, images_bboxs,
-                           images_points, images_zones,
-                           region_ids, region_names,
-                           count_lines, confidences,
-                           matplotlib_show=False,
-                           debug=True,
-                           md=False):
+    def text_accuracy_test(
+        true_images_texts,
+        predicted_images_texts,
+        img_paths,
+        images,
+        images_bboxs,
+        images_points,
+        images_zones,
+        region_ids,
+        region_names,
+        count_lines,
+        confidences,
+        matplotlib_show=False,
+        debug=True,
+        md=False,
+    ):
         """
         TODO: write description
         """
         n_good = 0
         n_bad = 0
-        for predicted_image_texts, \
-            true_image_texts, \
-            image, image_bboxs, \
-            image_points, image_zones, \
-            image_region_ids, image_region_names, \
-            image_count_lines, image_confidences, \
-            img_path in zip(predicted_images_texts,
-                            true_images_texts,
-                            images, images_bboxs,
-                            images_points, images_zones,
-                            region_ids, region_names,
-                            count_lines, confidences,
-                            img_paths):
+        for (
+            predicted_image_texts,
+            true_image_texts,
+            image,
+            image_bboxs,
+            image_points,
+            image_zones,
+            image_region_ids,
+            image_region_names,
+            image_count_lines,
+            image_confidences,
+            img_path,
+        ) in zip(
+            predicted_images_texts,
+            true_images_texts,
+            images,
+            images_bboxs,
+            images_points,
+            images_zones,
+            region_ids,
+            region_names,
+            count_lines,
+            confidences,
+            img_paths,
+        ):
             for true_image_text in true_image_texts:
                 if true_image_text in predicted_image_texts:
-                    message = f"+ NAME:{os.path.basename(img_path)} " \
-                              f"TRUE:{true_image_text} " \
-                              f"PREDICTED:{predicted_image_texts}"
-                    message = message if md else colored(message, 'green')
+                    message = (
+                        f"+ NAME:{os.path.basename(img_path)} "
+                        f"TRUE:{true_image_text} "
+                        f"PREDICTED:{predicted_image_texts}"
+                    )
+                    message = message if md else colored(message, "green")
                     n_good += 1
                 else:
-                    message = f"- NAME:{os.path.basename(img_path)} " \
-                              f"TRUE:{true_image_text} " \
-                              f"PREDICTED:{predicted_image_texts}"
-                    message = message if md else colored(message, 'red')
+                    message = (
+                        f"- NAME:{os.path.basename(img_path)} "
+                        f"TRUE:{true_image_text} "
+                        f"PREDICTED:{predicted_image_texts}"
+                    )
+                    message = message if md else colored(message, "red")
                     n_bad += 1
                 print(message)
                 if debug:
@@ -94,11 +124,13 @@ class AccuracyTestPipeline(object):
                         cntr = np.array(cntr, dtype=np.int32)
                         cv2.drawContours(image, [cntr], -1, (0, 0, 255), 2)
                     for target_box in image_bboxs:
-                        cv2.rectangle(image,
-                                      (int(target_box[0]), int(target_box[1])),
-                                      (int(target_box[2]), int(target_box[3])),
-                                      (0, 255, 0),
-                                      1)
+                        cv2.rectangle(
+                            image,
+                            (int(target_box[0]), int(target_box[1])),
+                            (int(target_box[2]), int(target_box[3])),
+                            (0, 255, 0),
+                            1,
+                        )
                     plt.imshow(image)
                     plt.show()
 
@@ -115,14 +147,23 @@ class AccuracyTestPipeline(object):
         print(f"TOTAL GOOD: {n_good / total}")
         print(f"TOTAL BAD: {n_bad / total}")
 
-    def text_accuracy_test_from_file(self, accuracy_test_data_file, predicted_images_texts,
-                                     img_paths, images, images_bboxs,
-                                     images_points, images_zones,
-                                     region_ids, region_names,
-                                     count_lines, confidences,
-                                     matplotlib_show=False,
-                                     debug=True,
-                                     md=False):
+    def text_accuracy_test_from_file(
+        self,
+        accuracy_test_data_file,
+        predicted_images_texts,
+        img_paths,
+        images,
+        images_bboxs,
+        images_points,
+        images_zones,
+        region_ids,
+        region_names,
+        count_lines,
+        confidences,
+        matplotlib_show=False,
+        debug=True,
+        md=False,
+    ):
         """
         TODO: write description
         """
@@ -135,14 +176,22 @@ class AccuracyTestPipeline(object):
                 true_images_texts.append(accuracy_test_data[key])
             else:
                 true_images_texts.append([])
-        self.text_accuracy_test(true_images_texts, predicted_images_texts,
-                                img_paths, images, images_bboxs,
-                                images_points, images_zones,
-                                region_ids, region_names,
-                                count_lines, confidences,
-                                matplotlib_show=matplotlib_show,
-                                debug=debug,
-                                md=md)
+        self.text_accuracy_test(
+            true_images_texts,
+            predicted_images_texts,
+            img_paths,
+            images,
+            images_bboxs,
+            images_points,
+            images_zones,
+            region_ids,
+            region_names,
+            count_lines,
+            confidences,
+            matplotlib_show=matplotlib_show,
+            debug=debug,
+            md=md,
+        )
 
 
 class Pipeline(AccuracyTestPipeline):
@@ -169,7 +218,9 @@ class Pipeline(AccuracyTestPipeline):
         self.task = task
         self.image_loader = self._init_image_loader(image_loader)
 
-        self._preprocess_params, self._forward_params, self._postprocess_params = self.sanitize_parameters(**kwargs)
+        self._preprocess_params, self._forward_params, self._postprocess_params = (
+            self.sanitize_parameters(**kwargs)
+        )
 
     @staticmethod
     def _init_image_loader(image_loader):
@@ -185,7 +236,9 @@ class Pipeline(AccuracyTestPipeline):
         elif issubclass(image_loader, BaseImageLoader):
             image_loader_class = image_loader
         else:
-            raise TypeError(f"The image_loader type must by in None, BaseImageLoader, str")
+            raise TypeError(
+                f"The image_loader type must by in None, BaseImageLoader, str"
+            )
         return image_loader_class()
 
     def sanitize_parameters(self, **pipeline_parameters):
@@ -243,7 +296,9 @@ class Pipeline(AccuracyTestPipeline):
         """
         kwargs["batch_size"] = batch_size
         kwargs["num_workers"] = num_workers
-        preprocess_params, forward_params, postprocess_params = self.sanitize_parameters(**kwargs)
+        preprocess_params, forward_params, postprocess_params = (
+            self.sanitize_parameters(**kwargs)
+        )
 
         # Fuse __init__ params and __call__ params without modifying the __init__ ones.
         preprocess_params = {**self._preprocess_params, **preprocess_params}
@@ -251,9 +306,17 @@ class Pipeline(AccuracyTestPipeline):
         postprocess_params = {**self._postprocess_params, **postprocess_params}
 
         if num_workers < 0 or num_workers > batch_size:
-            raise ValueError("num_workers must by grater 0 and less or equal batch_size")
-        outputs = self.run_multi(inputs, batch_size, num_workers,
-                                 preprocess_params, forward_params, postprocess_params)
+            raise ValueError(
+                "num_workers must by grater 0 and less or equal batch_size"
+            )
+        outputs = self.run_multi(
+            inputs,
+            batch_size,
+            num_workers,
+            preprocess_params,
+            forward_params,
+            postprocess_params,
+        )
         return outputs
 
     @staticmethod
@@ -268,11 +331,7 @@ class Pipeline(AccuracyTestPipeline):
         for chunk_inputs in chunked_iterable(inputs, num_workers):
             for inp in chunked_iterable(chunk_inputs, 1):
                 promise_all_args.append(
-                    {
-                        "function": func,
-                        "args": [inp],
-                        "kwargs": params
-                    }
+                    {"function": func, "args": [inp], "kwargs": params}
                 )
             # print(f"RUN promise_all {func} functions {len(promise_all_args)}")
             promise_outputs = promise_all(promise_all_args)
@@ -285,29 +344,48 @@ class Pipeline(AccuracyTestPipeline):
                     outputs.append(item)
         return outputs
 
-    def run_multi(self, inputs, batch_size, num_workers, preprocess_params, forward_params, postprocess_params):
+    def run_multi(
+        self,
+        inputs,
+        batch_size,
+        num_workers,
+        preprocess_params,
+        forward_params,
+        postprocess_params,
+    ):
         """
         TODO: write description
         """
         outputs = []
         for chunk_inputs in chunked_iterable(inputs, batch_size):
-            chunk_outputs = self.run_single(chunk_inputs, num_workers,
-                                            preprocess_params, forward_params, postprocess_params)
+            chunk_outputs = self.run_single(
+                chunk_inputs,
+                num_workers,
+                preprocess_params,
+                forward_params,
+                postprocess_params,
+            )
             for output in chunk_outputs:
                 outputs.append(output)
         return outputs
 
-    def run_single(self, inputs, num_workers, preprocess_params, forward_params, postprocess_params):
+    def run_single(
+        self, inputs, num_workers, preprocess_params, forward_params, postprocess_params
+    ):
         """
         TODO: write description
         """
         _inputs = inputs
         if not hasattr(self.preprocess, "is_empty") or not self.preprocess.is_empty:
-            _inputs = self.process_worker(self.preprocess, _inputs, preprocess_params, num_workers)
+            _inputs = self.process_worker(
+                self.preprocess, _inputs, preprocess_params, num_workers
+            )
         if not hasattr(self.forward, "is_empty") or not self.forward.is_empty:
             _inputs = self.forward(_inputs, **forward_params)
         if not hasattr(self.postprocess, "is_empty") or not self.postprocess.is_empty:
-            _inputs = self.process_worker(self.postprocess, _inputs, postprocess_params, num_workers)
+            _inputs = self.process_worker(
+                self.postprocess, _inputs, postprocess_params, num_workers
+            )
         return _inputs
 
 
@@ -315,6 +393,7 @@ class CompositePipeline(object):
     """
     Composite pipelines Pipeline Base Class
     """
+
     def __init__(self, pipelines):
         """
         TODO: write description
@@ -360,15 +439,18 @@ class RuntimePipeline(object):
         """
         TODO: write description
         """
+
         def wrapper(method):
             def timed(*args, **kw):
                 ts = time.time()
                 result = method(*args, **kw)
                 te = time.time()
-                self.time_stat[f'{tag}.{method.__name__}'] += te - ts
-                self.count_stat[f'{tag}.{method.__name__}'] += 1
+                self.time_stat[f"{tag}.{method.__name__}"] += te - ts
+                self.count_stat[f"{tag}.{method.__name__}"] += 1
                 return result
+
             return timed
+
         return wrapper
 
     def clear_stat(self):
