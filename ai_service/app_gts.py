@@ -30,7 +30,7 @@ multiline_number_plate_detection_and_reading = pipeline(
 
 # Define a function for preprocessing an image
 def preprocess(img):
-    # Detect rotation angle
+    # Detect rotation angle (Your original rotation logic)
     rot_angle = 0
     grayscale = rgb2gray(img)
     edges = canny(grayscale, sigma=3.0)
@@ -38,7 +38,7 @@ def preprocess(img):
     _, angles_peaks, _ = hough_line_peaks(out, angles, distances, num_peaks=20)
     angle = np.mean(np.rad2deg(angles_peaks))
 
-    # Adjust rotation angle
+    # Adjust rotation angle (Your original rotation logic)
     if 0 <= angle <= 90:
         rot_angle = angle - 90
     elif -45 <= angle < 0:
@@ -48,14 +48,24 @@ def preprocess(img):
     if abs(rot_angle) > 20:
         rot_angle = 0
 
-    # Rotate and crop the image
+    # Rotate and prepare for cropping
     rotated = rotate(img, rot_angle, resize=True) * 255
     rotated = rotated.astype(np.uint8)
-    rotated1 = rotated[:, :, :]
-    minus = np.abs(int(np.sin(np.radians(rot_angle)) * rotated.shape[0]))
-    if rotated.shape[1] / rotated.shape[0] < 3 and minus > 6:
-        rotated1 = rotated[minus:-minus, :, :]
-    return rotated1
+
+    H, W = rotated.shape[:2]  # Get height and width
+
+    # Dynamic Cropping Logic
+    crop_margin = 0  # Initialize (no cropping by default)
+    if W / H > 1.5:  # Adjust 1.5 value if needed for rectangle definition
+        crop_margin = np.abs(int(np.sin(np.radians(rot_angle)) * H))
+    elif W / H < 0.8:  # Adjust this for your idea of 'square'
+        crop_margin = np.abs(int(np.sin(np.radians(rot_angle)) * W))
+
+    # Apply the Crop
+    if crop_margin > 6:
+        rotated = rotated[crop_margin:-crop_margin, crop_margin:-crop_margin]
+
+    return rotated
 
 
 # Define a function to remove unwanted characters from a string
@@ -86,6 +96,8 @@ def del_symbols(input_string):
             "·",
             "<",
             ">",
+            "[",
+            "]",
         ):
             cleaned_string += char
 
@@ -312,4 +324,4 @@ def lp_det_reco(img_path):
 
 
 # result_text, confidence, country_code, cropped_image = lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg')
-# print(lp_det_reco('/home/rikitwiki/Desktop/gts/2773DZE_2773DZE.jpg'))
+# print(lp_det_reco('/home/rikitwiki/Desktop/storage/23/1/5/012484D9A87E41FAA3F80339E302A8FA.jpeg'))
